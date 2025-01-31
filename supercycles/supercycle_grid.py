@@ -1,8 +1,6 @@
-#%%
 import supercycles.acc_constants as cnst
 from supercycles.helpers import load_cycle_from_csv
 from supercycles.supercycle import Supercycle
-from supercycles.cycle import Cycle
 import numpy as np
 from supercycles.database import SPSCYCLES, PSCYCLES, PSBCYCLES
 
@@ -102,25 +100,7 @@ class SupercycleGrid():
                 coupled_start_slot += cycle.coupled_cycle.bps
 
 
-
     def display_grids(self):
         print("\nSPS SC:", self.sps_grid)
         print("PS SC: ", self.ps_grid)
         print("PSB SC:", self.psb_grid)
-
-
-
-
-# %%
-supercycle = SupercycleGrid(nr_of_slots=40)
-supercycle.add_cycle('SPS', SPSCYCLES['SFTPRO'], 2)
-supercycle.display_grids()
-supercycle.remove_cycle('SPS', SPSCYCLES['SFTPRO'])
-supercycle.display_grids()
-
-#supercycle.add_cycle('SPS', SPSCYCLES['deGauss'])
-#supercycle.display_grids()
-#supercycle.remove_cycle('SPS', SPSCYCLES['SFTPRO'])
-#supercycle.add_cycle('SPS', SPSCYCLES['LHC filling'])
-#supercycle.display_grids()
-# %%
