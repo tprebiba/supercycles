@@ -12,6 +12,7 @@ class Supercycle():
     Other class variables:
         - cycle_index [list]: list of cycle indexes in the supercycle
         - cycle_names [list]: list of cycle names in the supercycle
+        - cycle_colors [dict]: dictionary of cycle colors in the supercycle
         - bps [int]: number of basic periods of supercycle
         - length [float]: supercycle length [sec]
         - integrated_power [float]: integrated power [MW]
@@ -39,8 +40,10 @@ class Supercycle():
         if len(self.cycles)>0:
             self.cycle_indices = np.arange(len(self.cycles))+1
             self.cycle_names = []
+            self.cycle_colors = {}
             for cycle in self.cycles:
                 self.cycle_names.append(cycle.name)
+                self.cycle_colors[cycle.name] = cycle.color
             self.bps, self.length = self._calculate_supercycle_length()
             self.integrated_power, self.average_power = self._calculate_supercycle_power()
 

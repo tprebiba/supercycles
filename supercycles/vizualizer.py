@@ -1,66 +1,68 @@
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
+import numpy as np
 
-class SupercyclePlotter:
-    def __init__(self):
-        self.fig, self.ax = plt.subplots(figsize=(12, 4))
-        self.color_map = {}  # Optional: store colors for destinations
-
-    def plot_supercycle(self, supercycle):
+class GridVisualizer():
+    def __init__(self, supercycle_grid, grid_size=(15, 5)):
         """
-        Plot a single supercycle using rectangles for each cycle.
+        Initialize the GridVisualizer.
+        :param sps_grid: List representing the SPS grid
+        :param ps_grid: List representing the PS grid
+        :param psb_grid: List representing the PSB grid
+        :param grid_size: Tuple specifying the figure size (width, height)
         """
-        self.ax.clear()  # Clear any previous plots
-        current_x = 0
 
-        for cycle in supercycle.cycles:
-            color = self._get_cycle_color(cycle.destination)
-            rect = Rectangle((current_x, 0), cycle.length, 1, edgecolor='black', facecolor=color)
-            self.ax.add_patch(rect)
-            self.ax.text(current_x + cycle.length / 2, 0.5, cycle.name,
-                          ha='center', va='center', fontsize=10)
-            current_x += cycle.length
+        self.supercycle_grid = supercycle_grid
+        self.sps_grid = supercycle_grid.sps_grid
+        self.sps_supercycle = supercycle_grid.sps_supercycle
+        self.ps_grid = supercycle_grid.ps_grid
+        self.ps_supercycle = supercycle_grid.ps_supercycle
+        self.psb_grid = supercycle_grid.psb_grid
+        self.psb_supercycle = supercycle_grid.psb_supercycle
+        self.grid_size = grid_size
 
-        self.ax.set_xlim(0, supercycle.length)
-        self.ax.set_ylim(0, 1.5)
-        self.ax.set_xlabel("Time (s)")
-        self.ax.set_title(f"Supercycle for {supercycle.accelerator}")
+
+    def _draw_grid(self, ax, grid, y_offset, label, supercycle):
+        """
+        Draws a single grid row on the axis.
+        :param ax: Matplotlib axis
+        :param grid: List representing the accelerator grid
+        :param y_offset: Vertical offset for grid row
+        :param color: Color of the grid cells
+        :param label: Label for the row (e.g., SPS, PS)
+        """
+        num_slots = len(grid)
+        for i in range(num_slots):
+            cell_cycle = grid[i]
+            if cell_cycle is None:
+                cell_color = 'white'
+            else:
+                cell_color = supercycle.cycle_colors[cell_cycle]
+            rect = plt.Rectangle((i, y_offset), 1, 1, edgecolor='black', facecolor=cell_color)
+            ax.add_patch(rect)
+            if cell_cycle:  # Annotate non-empty slots
+                #ax.text(i + 0.5, y_offset + 0.5, str(grid[i]), ha='center', va='center', fontsize=8)
+                pass
+        
+        ax.text(-1, y_offset + 0.5, label, ha='right', va='center', fontsize=10, weight='bold')
+
+
+    def display(self):
+        """
+        Display the supercycle grids for SPS, PS, and PSB.
+        """
+        fig, ax = plt.subplots(figsize=self.grid_size)
+
+        # Set axis limits and labels
+        total_slots = max(len(self.sps_grid), len(self.ps_grid), len(self.psb_grid))
+        ax.set_xlim(0, total_slots)
+        ax.set_ylim(-1, 3)
+        ax.set_aspect('equal')
+        ax.axis('off')
+
+        # Draw grids
+        self._draw_grid(ax, self.sps_grid, 2, "SPS", self.sps_supercycle)
+        self._draw_grid(ax, self.ps_grid, 1, "PS", self.ps_supercycle)
+        self._draw_grid(ax, self.psb_grid, 0, "PSB", self.psb_supercycle)
+
+        plt.title(f'{self.supercycle_grid.name} supercycle')
         plt.show()
-
-    def plot_coupled_supercycles(self, coupled_supercycle):
-        """
-        Plot coupled supercycles for multiple accelerators.
-        """
-        self.ax.clear()
-        y_position = len(coupled_supercycle.supercycles)
-
-        for acc, supercycle in coupled_supercycle.supercycles.items():
-            current_x = 0
-            for cycle in supercycle.cycles:
-                color = self._get_cycle_color(cycle.destination)
-                rect = Rectangle((current_x, y_position - 0.5), cycle.length, 0.8,
-                                  edgecolor='black', facecolor=color)
-                self.ax.add_patch(rect)
-                self.ax.text(current_x + cycle.length / 2, y_position - 0.1, cycle.name,
-                              ha='center', va='center', fontsize=8)
-                current_x += cycle.length
-
-            y_position -= 1
-
-        self.ax.set_xlim(0, max(sc.length for sc in coupled_supercycle.supercycles.values()))
-        self.ax.set_ylim(0, len(coupled_supercycle.supercycles) + 1)
-        self.ax.set_xlabel("Time (s)")
-        self.ax.set_yticks(range(1, len(coupled_supercycle.supercycles) + 1))
-        self.ax.set_yticklabels(coupled_supercycle.supercycles.keys())
-        self.ax.set_title("Coupled Supercycles Visualization")
-        plt.show()
-
-    def _get_cycle_color(self, destination):
-        """
-        Return a color for the given destination. Assigns new colors as needed.
-        """
-        if destination not in self.color_map:
-            # Assign a random color for new destinations
-            import random
-            self.color_map[destination] = (random.random(), random.random(), random.random())
-        return self.color_map[destination]

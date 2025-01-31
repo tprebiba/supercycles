@@ -18,6 +18,7 @@ class Cycle():
         - offset_to_upstream [int]: number of BPs before the coupled cycle starts relative to the upstream cycle
         - cycle_profile_file [str]: csv file name with cycle profile
         - average_power [float]: average cycle power [MW]
+        - color [str]: cycle color
     Other class variables:
         - length [float]: cycle length [sec]
         - cycle_profile_x [np.array]: cycle profile in x axis [ms]
@@ -27,7 +28,8 @@ class Cycle():
                  accelerator, name, bps, 
                  destination='', lsa_cycle = '', timing_user='',
                  coupled_cycle=None, number_of_injections=1, offset_to_upstream=0,
-                 cycle_profile_file = None, average_power=0
+                 cycle_profile_file = None, average_power=0,
+                 color='white'
                  ):
         
         self.accelerator = accelerator 
@@ -40,6 +42,7 @@ class Cycle():
         self.number_of_injections = number_of_injections
         self.offset_to_upstream = offset_to_upstream
         self.average_power = average_power # [MW]
+        self.color = color
 
         self.length = self.bps*cnst.BASIC_PERIOD # [sec]        
         self.cycle_profile_x = None

@@ -10,6 +10,7 @@ class SupercycleGrid():
         '''
         supercycles [dict]: dictionary of accelerator: SuperCycle
         '''
+        self.name = name
         self.sps_grid = np.full(nr_of_slots, None) # None indicates empty BP slots
         self.ps_grid = np.full(nr_of_slots, None)
         self.psb_grid = np.full(nr_of_slots, None)
@@ -45,7 +46,7 @@ class SupercycleGrid():
         # Place the cycle in the primary grid
         for i in range(cycle.bps):
             grid[start_slot + i] = cycle.name
-        print(f"{cycle.name} added at slot {start_slot} on {accelerator}")
+        #print(f"{cycle.name} added at slot {start_slot} on {accelerator}")
         supercycle.add_cycle(cycle)
 
         # Handle coupled cycles recursively
@@ -86,10 +87,7 @@ class SupercycleGrid():
             if grid[i] == cycle.name:
                 grid[i] = None
                 cleared_slots += 1
-
-        print(f"Removed {cycle.name} from {accelerator} ({cleared_slots} BP slots cleared)")
-
-        # Remove from the supercycle list
+        #print(f"Removed {cycle.name} from {accelerator} ({cleared_slots} BP slots cleared)")
         supercycle.remove_cycle(cycle)
 
         # Handle coupled cycles recursively
