@@ -13,8 +13,11 @@ class Supercycle():
         - cycle_index [list]: list of cycle indexes in the supercycle
         - cycle_names [list]: list of cycle names in the supercycle
         - cycle_colors [dict]: dictionary of cycle colors in the supercycle
+        - cycle_counts [dict]: dictionary of cycle counts in the supercycle
+        - cycle_times [dict]: dictionary of cycle times in the supercycle
         - bps [int]: number of basic periods of supercycle
         - length [float]: supercycle length [sec]
+        - proton_flux [dict]: dictionary of proton fluxes in the supercycle
         - integrated_power [float]: integrated power [MW]
         - average_power [float]: average power [MW]
     Class methods:
@@ -41,10 +44,21 @@ class Supercycle():
             self.cycle_indices = np.arange(len(self.cycles))+1
             self.cycle_names = []
             self.cycle_colors = {}
+            self.cycle_counts = {}
+            self.cycle_times = {}
+            self.proton_flux = {}
             for cycle in self.cycles:
                 self.cycle_names.append(cycle.name)
                 self.cycle_colors[cycle.name] = cycle.color
+                self.cycle_counts[cycle.name] = 0
+                self.cycle_times[cycle.name] = 0
+                self.proton_flux[cycle.name] = 0
+            for cycle in self.cycles:
+                self.cycle_counts[cycle.name] += 1
+                self.cycle_times[cycle.name] += cycle.length
+                self.proton_flux[cycle.name] += cycle.total_intensity_per_cycle*cycle.transmission_to_destination
             self.bps, self.length = self._calculate_supercycle_length()
+            self.proton_flux = {cycle: self.proton_flux[cycle]/self.length for cycle in self.proton_flux}
             self.integrated_power, self.average_power = self._calculate_supercycle_power()
 
 

@@ -9,7 +9,7 @@ import copy
 class SupercycleGrid():
     def __init__(self, name='Physics', nr_of_slots=50):
         '''
-        supercycles [dict]: dictionary of accelerator: SuperCycle
+        A simple grid representation of the PSB, PS and SPS supercycles
         '''
         self.name = name
         self.nr_of_slots = nr_of_slots
@@ -20,9 +20,6 @@ class SupercycleGrid():
         self.sps_supercycle = Supercycle('SPS', name, [])
         self.ps_supercycle = Supercycle('PS', name, [])
         self.psb_supercycle = Supercycle('PSB', name, [])
-        self.sps_cycle_counts = {}
-        self.ps_cycle_counts = {}
-        self.psb_cycle_counts = {}
 
 
     def _get_grid(self, accelerator):
@@ -48,8 +45,7 @@ class SupercycleGrid():
             sps_grid0, sps_supercycle0 = self.sps_grid.copy(), copy.deepcopy(self.sps_supercycle)
             ps_grid0, ps_supercycle0 = self.ps_grid.copy(), copy.deepcopy(self.ps_supercycle)
             psb_grid0, psb_supercycle0 = self.psb_grid.copy(), copy.deepcopy(self.psb_supercycle)
-
-            grid, supercycle = self._get_grid(accelerator)
+            grid, supercycle= self._get_grid(accelerator)
 
             # Automatically find the last available slot if not explicitly given
             if start_slot is None:
@@ -60,10 +56,9 @@ class SupercycleGrid():
             # Do some checks before placing the supercycle
             self._validate_placement(cycle, start_slot-1, grid, accelerator) # -1 to convert to 0-based index
             
-            # Place the cycle in the primary grid
+            # Place the cycle in the primary grid and update the corresponding supercycle
             for i in range(cycle.bps):
                 grid[start_slot -1 + i] = cycle.name # -1 to convert to 0-based index
-            #print(f"{cycle.name} added at slot {start_slot} on {accelerator}")
             supercycle.add_cycle(cycle)
 
             # Handle coupled cycles recursively
@@ -81,7 +76,9 @@ class SupercycleGrid():
 
 
     def _validate_placement(self, cycle, start_slot, grid, accelerator):
-        # Ensure cycle fits within grid and slots are available
+        '''
+        Validate the placement of a cycle in the supercycle grid.
+        '''
         if start_slot + cycle.bps > len(grid):
             raise ValueError(f"Error adding cycle {cycle.name} to {accelerator} grid: does not fit within the supercycle grid - make it bigger.")
         if start_slot<0:
@@ -109,13 +106,12 @@ class SupercycleGrid():
             print(f"No matching cycle found at slot {start_slot} on {accelerator}")
             return
 
-        # Remove all slots occupied by this cycle
+        # Remove all slots occupied by this cycle and update the supercycle
         cleared_slots = 0
         for i in range(start_slot-1, start_slot-1 + cycle.bps):
             if grid[i] == cycle.name:
                 grid[i] = None
                 cleared_slots += 1
-        #print(f"Removed {cycle.name} from {accelerator} ({cleared_slots} BP slots cleared)")
         supercycle.remove_cycle(cycle)
 
         # Handle coupled cycles recursively
@@ -146,9 +142,3 @@ class SupercycleGrid():
                     for j in range(cycle.bps):
                         grid[i + j] = cycle.name
                     supercycle.add_cycle(cycle)
-
-
-    def _count_cycles(self):
-        for supercycle, counts in zip([self.sps_supercycle, self.ps_supercycle, self.psb_supercycle], [self.sps_cycle_counts, self.ps_cycle_counts, self.psb_cycle_counts]):
-            counts = {item: supercycle.cycle_names.count(item) for item in set(supercycle.cycle_names)}
-            print(counts)

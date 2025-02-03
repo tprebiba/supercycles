@@ -40,6 +40,12 @@ physics.add_cycle('PS', PSCYCLES['ZERO'])
 physics.fill_empty_slots_with_cycle('PSB', PSBCYCLES['ISOLDE'])
 physics.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 38)
 physics.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 37)
-GridVisualizer(physics).display(save_png_to='../images/supercycle_grid_example.png')
-physics._count_cycles()
+# Plot and do some basic calculations
+GridVisualizer(physics).display()#save_png_to='../images/supercycle_grid_example.png')
+print(physics.sps_supercycle.cycle_counts)
+print(physics.ps_supercycle.cycle_counts)
+print(physics.psb_supercycle.cycle_counts)
+iso_current_uA = physics.psb_supercycle.proton_flux['ISOLDE']*1.6e-19*1e6
+print(f'ISOLDE current: {iso_current_uA} uA')
+
 # %%

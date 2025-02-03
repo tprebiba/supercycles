@@ -2,7 +2,8 @@ from supercycles.cycle import Cycle
 
 
 PSBCYCLES = {
-    'ISOLDE':   Cycle(accelerator='PSB', name='ISOLDE', bps=1, color='#00FFFF'),
+    'ISOLDE':   Cycle(accelerator='PSB', name='ISOLDE', bps=1, color='#00FFFF',
+                      total_intensity_per_cycle = 3.2e13, transmission_to_destination=1),
     'AD':       Cycle(accelerator='PSB', name='AD',     bps=1, color='#800080'),
     'TOF':      Cycle(accelerator='PSB', name='TOF',    bps=1, color='#FFA500'),
     'EAST':     Cycle(accelerator='PSB', name='EAST',   bps=1, color='#EE82EE'),
