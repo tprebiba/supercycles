@@ -12,6 +12,8 @@ class SupercycleGrid():
         supercycles [dict]: dictionary of accelerator: SuperCycle
         '''
         self.name = name
+        self.nr_of_slots = nr_of_slots
+        
         self.sps_grid = np.full(nr_of_slots, None) # None indicates empty BP slots
         self.ps_grid = np.full(nr_of_slots, None)
         self.psb_grid = np.full(nr_of_slots, None)
@@ -46,14 +48,14 @@ class SupercycleGrid():
             if start_slot is None:
                 # Find the last occupied slot in the grid
                 last_occupied_slot = max((i for i, x in enumerate(grid) if x is not None), default=-1)
-                start_slot = last_occupied_slot + 1
+                start_slot = last_occupied_slot + 1 + 1 # +1 to have it as a slot ID
 
             # Do some checks before placing the supercycle
-            self._validate_placement(cycle, start_slot, grid, accelerator)
+            self._validate_placement(cycle, start_slot-1, grid, accelerator) # -1 to convert to 0-based index
             
             # Place the cycle in the primary grid
             for i in range(cycle.bps):
-                grid[start_slot + i] = cycle.name
+                grid[start_slot -1 + i] = cycle.name # -1 to convert to 0-based index
             #print(f"{cycle.name} added at slot {start_slot} on {accelerator}")
             supercycle.add_cycle(cycle)
 
@@ -90,16 +92,16 @@ class SupercycleGrid():
             if last_occurrence_slot is None:
                 print(f"No occurrences of {cycle.name} found on {accelerator}")
                 return
-            start_slot = last_occurrence_slot - (cycle.bps - 1)
+            start_slot = last_occurrence_slot - (cycle.bps - 1) + 1 # +1 to have it as a slot ID
 
         # Ensure the cycle name matches the slot
-        if grid[start_slot] != cycle.name:
+        if grid[start_slot-1] != cycle.name:
             print(f"No matching cycle found at slot {start_slot} on {accelerator}")
             return
 
         # Remove all slots occupied by this cycle
         cleared_slots = 0
-        for i in range(start_slot, start_slot + cycle.bps):
+        for i in range(start_slot-1, start_slot-1 + cycle.bps):
             if grid[i] == cycle.name:
                 grid[i] = None
                 cleared_slots += 1
