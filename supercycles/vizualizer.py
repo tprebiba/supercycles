@@ -50,7 +50,8 @@ class GridVisualizer():
         ax.text(-0.5, y_offset + 0.5, label, ha='right', va='center', fontsize=fontsize, weight='bold')
 
 
-    def display(self, fontsize=10):
+    def display(self, fontsize=10, 
+                save_png_to=None):
         """
         Display the supercycle grids with Slot ID and Time rows.
         """
@@ -79,4 +80,6 @@ class GridVisualizer():
         fig.tight_layout()
         plt.title(f'{self.supercycle_grid.name} supercycle', fontsize=fontsize+2)
         plt.show()
+        if save_png_to:
+            fig.savefig(save_png_to, dpi=400)
 
