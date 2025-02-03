@@ -13,17 +13,22 @@ class SupercycleGrid():
         '''
         self.name = name
         self.nr_of_slots = nr_of_slots
-        
+
         self.sps_grid = np.full(nr_of_slots, None) # None indicates empty BP slots
         self.ps_grid = np.full(nr_of_slots, None)
         self.psb_grid = np.full(nr_of_slots, None)
         self.sps_supercycle = Supercycle('SPS', name, [])
         self.ps_supercycle = Supercycle('PS', name, [])
         self.psb_supercycle = Supercycle('PSB', name, [])
+        self.sps_cycle_counts = {}
+        self.ps_cycle_counts = {}
+        self.psb_cycle_counts = {}
 
 
     def _get_grid(self, accelerator):
-        '''Get grid for a specific accelerator'''
+        '''
+        Get grid for a specific accelerator
+        '''
         if accelerator == 'SPS':
             return self.sps_grid, self.sps_supercycle
         elif accelerator == 'PS':
@@ -35,7 +40,9 @@ class SupercycleGrid():
 
 
     def add_cycle(self, accelerator, cycle, start_slot=None):
-
+        '''
+        Adds a cycle to the supercycle grid.
+        '''
         try:
              # Save states for rollback
             sps_grid0, sps_supercycle0 = self.sps_grid.copy(), copy.deepcopy(self.sps_supercycle)
@@ -84,6 +91,9 @@ class SupercycleGrid():
 
 
     def remove_cycle(self, accelerator, cycle, start_slot=None):
+        '''
+        Removes a cycle from the supercycle grid.
+        '''
         grid, supercycle = self._get_grid(accelerator)
 
         # Automatically find the last occurrence if start_slot is None
@@ -120,3 +130,25 @@ class SupercycleGrid():
         print("\nSPS SC:", self.sps_grid)
         print("PS SC: ", self.ps_grid)
         print("PSB SC:", self.psb_grid)
+
+
+    def fill_empty_slots_with_cycle(self, accelerator, cycle):
+        """
+        Fill all empty slots in the specified accelerator grid with the given cycle.
+        """
+        grid, supercycle = self._get_grid(accelerator)
+
+        # Find and fill empty slots
+        for i in range(len(grid)):
+            if grid[i] is None:
+                # Check if the cycle fits from this slot
+                if i + cycle.bps <= len(grid) and all(slot is None for slot in grid[i:i + cycle.bps]):
+                    for j in range(cycle.bps):
+                        grid[i + j] = cycle.name
+                    supercycle.add_cycle(cycle)
+
+
+    def _count_cycles(self):
+        for supercycle, counts in zip([self.sps_supercycle, self.ps_supercycle, self.psb_supercycle], [self.sps_cycle_counts, self.ps_cycle_counts, self.psb_cycle_counts]):
+            counts = {item: supercycle.cycle_names.count(item) for item in set(supercycle.cycle_names)}
+            print(counts)

@@ -3,7 +3,7 @@ import numpy as np
 
 
 class GridVisualizer():
-    def __init__(self, supercycle_grid, grid_size=(15, 4),
+    def __init__(self, supercycle_grid, grid_size=(15, 5),
                  dynamic_grid_size=True):
         """
         Initialize the GridVisualizer.
@@ -22,7 +22,7 @@ class GridVisualizer():
         self.psb_supercycle = supercycle_grid.psb_supercycle
         self.total_slots = self.supercycle_grid.nr_of_slots
         if dynamic_grid_size:
-            self.grid_size = (self.total_slots*15/35, 4)
+            self.grid_size = (self.total_slots*15/35, 5)
 
     def _draw_grid(self, ax, grid, y_offset, label, supercycle,
                    fontsize):
@@ -44,13 +44,13 @@ class GridVisualizer():
             rect = plt.Rectangle((i, y_offset), 1, 1, edgecolor='black', facecolor=cell_color)
             ax.add_patch(rect)
             if cell_cycle:  # Annotate non-empty slots
-                #ax.text(i + 0.5, y_offset + 0.5, str(grid[i]), ha='center', va='center', fontsize=8)
+                ax.text(i + 0.5, y_offset + 0.5, str(grid[i]), ha='center', va='center', fontsize=fontsize-3, rotation=90)
                 pass
         
         ax.text(-0.5, y_offset + 0.5, label, ha='right', va='center', fontsize=fontsize, weight='bold')
 
 
-    def display(self, fontsize=10, 
+    def display(self, fontsize=12, 
                 save_png_to=None):
         """
         Display the supercycle grids with Slot ID and Time rows.
@@ -60,7 +60,8 @@ class GridVisualizer():
         # Set axis limits and labels
         ax.set_xlim(0, self.total_slots)
         ax.set_ylim(-2, 4)  # Adjust for additional rows
-        ax.set_aspect('equal')
+        #ax.set_aspect('equal')
+        ax.set_aspect('auto')
         ax.axis('off')
 
         # Draw Slot ID row above the SPS grid
@@ -77,7 +78,6 @@ class GridVisualizer():
         self._draw_grid(ax, self.ps_grid, 1, "PS", self.ps_supercycle, fontsize)
         self._draw_grid(ax, self.psb_grid, 0, "PSB", self.psb_supercycle, fontsize)
 
-        fig.tight_layout()
         plt.title(f'{self.supercycle_grid.name} supercycle', fontsize=fontsize+2)
         plt.show()
         if save_png_to:
