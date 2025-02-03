@@ -3,6 +3,7 @@ from supercycles.helpers import load_cycle_from_csv
 from supercycles.supercycle import Supercycle
 import numpy as np
 from supercycles.database import SPSCYCLES, PSCYCLES, PSBCYCLES
+import copy
 
 
 class SupercycleGrid():
@@ -32,37 +33,52 @@ class SupercycleGrid():
 
 
     def add_cycle(self, accelerator, cycle, start_slot=None):
-        grid, supercycle = self._get_grid(accelerator)
 
-        # Automatically find the last available slot if not explicitly given
-        if start_slot is None:
-            # Find the last occupied slot in the grid
-            last_occupied_slot = max((i for i, x in enumerate(grid) if x is not None), default=-1)
-            start_slot = last_occupied_slot + 1
+        try:
+             # Save states for rollback
+            sps_grid0, sps_supercycle0 = self.sps_grid.copy(), copy.deepcopy(self.sps_supercycle)
+            ps_grid0, ps_supercycle0 = self.ps_grid.copy(), copy.deepcopy(self.ps_supercycle)
+            psb_grid0, psb_supercycle0 = self.psb_grid.copy(), copy.deepcopy(self.psb_supercycle)
 
-        # Do some checks before placing the supercycle
-        self._validate_placement(cycle, start_slot, grid)
-        
-        # Place the cycle in the primary grid
-        for i in range(cycle.bps):
-            grid[start_slot + i] = cycle.name
-        #print(f"{cycle.name} added at slot {start_slot} on {accelerator}")
-        supercycle.add_cycle(cycle)
+            grid, supercycle = self._get_grid(accelerator)
 
-        # Handle coupled cycles recursively
-        if cycle.coupled_cycle:
-            next_start = start_slot - cycle.offset_to_upstream
-            for _ in range(cycle.number_of_injections):
-                self.add_cycle(cycle.coupled_cycle.accelerator, cycle.coupled_cycle, next_start)
-                next_start += cycle.coupled_cycle.bps
+            # Automatically find the last available slot if not explicitly given
+            if start_slot is None:
+                # Find the last occupied slot in the grid
+                last_occupied_slot = max((i for i, x in enumerate(grid) if x is not None), default=-1)
+                start_slot = last_occupied_slot + 1
+
+            # Do some checks before placing the supercycle
+            self._validate_placement(cycle, start_slot, grid, accelerator)
+            
+            # Place the cycle in the primary grid
+            for i in range(cycle.bps):
+                grid[start_slot + i] = cycle.name
+            #print(f"{cycle.name} added at slot {start_slot} on {accelerator}")
+            supercycle.add_cycle(cycle)
+
+            # Handle coupled cycles recursively
+            if cycle.coupled_cycle:
+                next_start = start_slot - cycle.offset_to_upstream
+                for _ in range(cycle.number_of_injections):
+                    self.add_cycle(cycle.coupled_cycle.accelerator, cycle.coupled_cycle, next_start)
+                    next_start += cycle.coupled_cycle.bps
+        except Exception as e:
+            # Rollback all states if an error occurs
+            self.sps_grid, self.sps_supercycle = sps_grid0, sps_supercycle0
+            self.ps_grid, self.ps_supercycle = ps_grid0, ps_supercycle0
+            self.psb_grid, self.psb_supercycle = psb_grid0, psb_supercycle0
+            raise e
 
 
-    def _validate_placement(self, cycle, start_slot, grid):
+    def _validate_placement(self, cycle, start_slot, grid, accelerator):
         # Ensure cycle fits within grid and slots are available
         if start_slot + cycle.bps > len(grid):
-            raise ValueError(f"Cycle '{cycle.name}' does not fit within the supercycle grid: make it bigger.")
+            raise ValueError(f"Error adding cycle {cycle.name} to {accelerator} grid: does not fit within the supercycle grid - make it bigger.")
         if start_slot<0:
-            raise ValueError(f"Ivalid placement of cycle {cycle.name}: goes beyond the start of the supercycle grid.")
+            raise ValueError(f"Error adding cycle {cycle.name} to {accelerator} grid: placement goes beyond the start of the supercycle grid.")
+        if grid[start_slot] is not None:
+            raise ValueError(f"Error adding cycle {cycle.name} to {accelerator} grid: cycle overlaps with {grid[start_slot]} at slot {start_slot}.")
 
 
     def remove_cycle(self, accelerator, cycle, start_slot=None):

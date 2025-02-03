@@ -50,7 +50,7 @@ class Supercycle():
 
     def _calculate_supercycle_length(self):
         '''
-        Calculate super cycle length and bps
+        Calculate super cycle length and bps.
         '''
         bps = 0
         length = 0
@@ -66,7 +66,7 @@ class Supercycle():
 
     def _calculate_supercycle_power(self):
         '''
-        Calculate super cycle average power
+        Calculate super cycle average power.
         '''
         integrated_power = 0
         for cycle in self.cycles:
@@ -81,7 +81,8 @@ class Supercycle():
 
     def add_cycle(self, cycle):
         '''
-        Add a cycle to the supercycle
+        Add a cycle to the supercycle.
+        Does not preserve the order of the cycles.
         '''
         self.cycles.append(cycle)
         self.__init__(self.accelerator, self.name, self.cycles)
@@ -89,7 +90,7 @@ class Supercycle():
 
     def remove_cycle(self, cycle):
         '''
-        Delete a cycle from the supercycle
+        Delete a cycle from the supercycle.
         '''
         self.cycles.remove(cycle) # removes the last occurrence of the cycle
         self.__init__(self.accelerator, self.name, self.cycles)

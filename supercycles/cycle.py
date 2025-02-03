@@ -29,6 +29,7 @@ class Cycle():
                  destination='', lsa_cycle = '', timing_user='',
                  coupled_cycle=None, number_of_injections=1, offset_to_upstream=0,
                  cycle_profile_file = None, average_power=0,
+                 total_intensity_per_cycle_e10 = 0, transmission_to_destination=1,
                  color='white'
                  ):
         
@@ -42,6 +43,8 @@ class Cycle():
         self.number_of_injections = number_of_injections
         self.offset_to_upstream = offset_to_upstream
         self.average_power = average_power # [MW]
+        self.total_intensity_per_cycle_e10 = total_intensity_per_cycle_e10 # [e10]
+        self.transmission_to_destination = transmission_to_destination
         self.color = color
 
         self.length = self.bps*cnst.BASIC_PERIOD # [sec]        
