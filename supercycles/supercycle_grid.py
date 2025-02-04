@@ -1,9 +1,9 @@
-import supercycles.acc_constants as cnst
 from supercycles.helpers import load_cycle_from_csv
 from supercycles.supercycle import Supercycle
 import numpy as np
 from supercycles.database import SPSCYCLES, PSCYCLES, PSBCYCLES
 import copy
+import pickle
 
 
 class SupercycleGrid():
@@ -52,12 +52,11 @@ class SupercycleGrid():
                 # Find the last occupied slot in the grid
                 last_occupied_slot = max((i for i, x in enumerate(grid) if x is not None), default=-1)
                 start_slot = last_occupied_slot + 1 + 1 # +1 to have it as a slot ID
-
-            # Do some checks before placing the supercycle
-            self._validate_placement(cycle, start_slot-1, grid, accelerator) # -1 to convert to 0-based index
             
             # Place the cycle in the primary grid and update the corresponding supercycle
             for i in range(cycle.bps):
+                # Do some checks before placing the supercycle
+                self._validate_placement(cycle, start_slot -1 + i, grid, accelerator) # -1 to convert to 0-based index
                 grid[start_slot -1 + i] = cycle.name # -1 to convert to 0-based index
             supercycle.add_cycle(cycle)
 
@@ -79,12 +78,12 @@ class SupercycleGrid():
         '''
         Validate the placement of a cycle in the supercycle grid.
         '''
-        if start_slot + cycle.bps > len(grid):
+        if start_slot > (len(grid)-1):
             raise ValueError(f"Error adding cycle {cycle.name} to {accelerator} grid: does not fit within the supercycle grid - make it bigger.")
         if start_slot<0:
             raise ValueError(f"Error adding cycle {cycle.name} to {accelerator} grid: placement goes beyond the start of the supercycle grid.")
         if grid[start_slot] is not None:
-            raise ValueError(f"Error adding cycle {cycle.name} to {accelerator} grid: cycle overlaps with {grid[start_slot]} at slot {start_slot}.")
+            raise ValueError(f"Error adding cycle {cycle.name} to {accelerator} grid: cycle overlaps with {grid[start_slot]} at slot {start_slot+1}.")
 
 
     def remove_cycle(self, accelerator, cycle, start_slot=None):
@@ -142,3 +141,23 @@ class SupercycleGrid():
                     for j in range(cycle.bps):
                         grid[i + j] = cycle.name
                     supercycle.add_cycle(cycle)
+
+
+    def to_pickle(self, filename):
+        """
+        Save the SupercycleGrid object to a pickle file.
+        """
+        with open(filename, 'wb') as file:
+            pickle.dump(self, file)
+        print(f"SupercycleGrid saved to {filename}")
+
+
+    @classmethod
+    def from_pickle(cls, filename):
+        """
+        Load a SupercycleGrid object from a pickle file.
+        """
+        with open(filename, 'rb') as file:
+            obj = pickle.load(file)
+        print(f"SupercycleGrid loaded from {filename}")
+        return obj
