@@ -2,6 +2,7 @@
 from supercycles.database import SPSCYCLES, PSCYCLES, PSBCYCLES
 from supercycles.supercycle_grid import SupercycleGrid
 from supercycles.vizualizer import GridVisualizer
+import pickle
 
 
 #%%
@@ -45,6 +46,8 @@ physics.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 38)
 physics.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 37)
 # Plot and do some basic calculations
 GridVisualizer(physics).display()#save_png_to='../images/supercycle_grid_example.png')
+#physics.to_pickle('physics.pkl')
+#physics = SupercycleGrid.from_pickle('physics.pkl')
 print(physics.sps_supercycle.cycle_counts)
 print(physics.ps_supercycle.cycle_counts)
 print(physics.psb_supercycle.cycle_counts)
@@ -219,3 +222,31 @@ print(f'ISOLDE current: {iso_current_uA} uA')
 ######################################
 # Scrubbing supercycle grid
 ######################################
+
+
+#%%
+######################################
+# Save scenario
+######################################
+supercycle_grids = {
+    physics.name: physics,
+    physics_w_MD.name: physics_w_MD,
+    lhc_filling.name: lhc_filling,
+    awake.name: awake,
+}
+time_shares = {
+    #physics.name: 38.8,
+    #physics_w_MD.name: 20.3,
+    #lhc_filling.name: 14,
+    #awake.name: 8,
+    physics.name: 50.0,
+    physics_w_MD.name: 20,
+    lhc_filling.name: 15,
+    awake.name: 15,
+}
+scenario = {
+    'supercycle_grids': supercycle_grids,
+    'time_shares': time_shares,
+}
+with open('000_run3_typical_supercycles.pkl', 'wb') as file:
+    pickle.dump(scenario, file)

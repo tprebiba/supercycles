@@ -49,7 +49,6 @@ class GridVisualizer():
         
         ax.text(-0.5, y_offset + 0.5, label, ha='right', va='center', fontsize=fontsize, weight='bold')
 
-
     def display(self, fontsize=12, 
                 save_png_to=None):
         """
@@ -83,3 +82,35 @@ class GridVisualizer():
         if save_png_to:
             fig.savefig(save_png_to, dpi=400)
 
+
+class SchedulerStatisticsVisualizer():
+    def __init__(self, scheduler):
+        """
+        Initialize the SchedulerStatisticsVisualizer.
+            scheduler: Scheduler object
+        """
+        self.scheduler = scheduler
+    
+    def plot_pie(self, labels, sizes,
+                 figsize=(8,8), 
+                 autopct='%1.1f%%', fontsize=12, rotation=90, _colors=None):
+        """
+        Plot a pie chart of the supercycle counts.
+        """
+        labels = list(labels)
+        sizes = list(sizes)
+        total_time = sum(sizes)
+        
+        fig, ax = plt.subplots(figsize=figsize, facecolor='white')
+        fontsize=fontsize
+        wedges, texts, autotexts = ax.pie(
+            sizes, labels=labels, autopct=autopct,
+            colors=_colors,startangle=rotation,textprops=dict(color="black", size=fontsize)  # Adjust the text properties
+        )
+        # Adjust the labels to be inside the pie chart
+        for text, autotext in zip(texts, autotexts):
+            text.set(size=fontsize)
+            autotext.set(size=fontsize)
+        ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        fig.tight_layout()
+        

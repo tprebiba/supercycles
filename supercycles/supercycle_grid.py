@@ -21,7 +21,6 @@ class SupercycleGrid():
         self.ps_supercycle = Supercycle('PS', name, [])
         self.psb_supercycle = Supercycle('PSB', name, [])
 
-
     def _get_grid(self, accelerator):
         '''
         Get grid for a specific accelerator
@@ -34,7 +33,6 @@ class SupercycleGrid():
             return self.psb_grid, self.psb_supercycle
         else:
             raise ValueError(f"Unknown accelerator: {accelerator}")
-
 
     def add_cycle(self, accelerator, cycle, start_slot=None):
         '''
@@ -73,7 +71,6 @@ class SupercycleGrid():
             self.psb_grid, self.psb_supercycle = psb_grid0, psb_supercycle0
             raise e
 
-
     def _validate_placement(self, cycle, start_slot, grid, accelerator):
         '''
         Validate the placement of a cycle in the supercycle grid.
@@ -84,7 +81,6 @@ class SupercycleGrid():
             raise ValueError(f"Error adding cycle {cycle.name} to {accelerator} grid: placement goes beyond the start of the supercycle grid.")
         if grid[start_slot] is not None:
             raise ValueError(f"Error adding cycle {cycle.name} to {accelerator} grid: cycle overlaps with {grid[start_slot]} at slot {start_slot+1}.")
-
 
     def remove_cycle(self, accelerator, cycle, start_slot=None):
         '''
@@ -120,12 +116,10 @@ class SupercycleGrid():
                 self.remove_cycle(cycle.coupled_cycle.accelerator, cycle.coupled_cycle, coupled_start_slot)
                 coupled_start_slot += cycle.coupled_cycle.bps
 
-
     def display_grids(self):
         print("\nSPS SC:", self.sps_grid)
         print("PS SC: ", self.ps_grid)
         print("PSB SC:", self.psb_grid)
-
 
     def fill_empty_slots_with_cycle(self, accelerator, cycle):
         """
@@ -142,7 +136,6 @@ class SupercycleGrid():
                         grid[i + j] = cycle.name
                     supercycle.add_cycle(cycle)
 
-
     def to_pickle(self, filename):
         """
         Save the SupercycleGrid object to a pickle file.
@@ -151,9 +144,8 @@ class SupercycleGrid():
             pickle.dump(self, file)
         print(f"SupercycleGrid saved to {filename}")
 
-
     @classmethod
-    def from_pickle(cls, filename):
+    def from_pickle(self, filename):
         """
         Load a SupercycleGrid object from a pickle file.
         """
