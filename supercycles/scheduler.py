@@ -83,3 +83,9 @@ class Scheduler:
             self.ps_total_cycle_times.update(total_cycle_times_of_supercycle)
             total_cycle_times_of_supercycle = {key: value*self.supercycle_counts[supercyclename] for key, value in supercycle.psb_supercycle.cycle_times.items()}
             self.psb_total_cycle_times.update(total_cycle_times_of_supercycle)
+
+    def summary_table():
+        """
+        Create a summary table of the supercycle scenario.
+        """
+        pass

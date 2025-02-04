@@ -146,18 +146,109 @@ print(f'ISOLDE current: {iso_current_uA} uA')
 ######################################
 # LHC setup supercycle grid
 ######################################
+lhc_setup = SupercycleGrid(nr_of_slots=48, name='LHC setup')
+# SPS
+lhc_setup.add_cycle('SPS', SPSCYCLES['SFTPRO'], 3)
+lhc_setup.add_cycle('SPS', SPSCYCLES['LHC pilot'])
+lhc_setup.add_cycle('SPS', SPSCYCLES['deGauss'])
+lhc_setup.add_cycle('SPS', SPSCYCLES['SFTPRO'])
+lhc_setup.add_cycle('SPS', SPSCYCLES['LHC pilot'])
+lhc_setup.add_cycle('SPS', SPSCYCLES['deGauss'])
+# PS
+lhc_setup.add_cycle('PS', PSCYCLES['TOF'], 4)
+lhc_setup.add_cycle('PS', PSCYCLES['EAST T8'], 5)
+lhc_setup.add_cycle('PS', PSCYCLES['EAST T9'], 7)
+lhc_setup.add_cycle('PS', PSCYCLES['TOF'], 9)
+lhc_setup.add_cycle('PS', PSCYCLES['ZERO'], 10)
+lhc_setup.add_cycle('PS', PSCYCLES['EAST T8'], 13)
+lhc_setup.add_cycle('PS', PSCYCLES['ZERO'], 15)
+lhc_setup.add_cycle('PS', PSCYCLES['EAST TN'], 16)
+lhc_setup.add_cycle('PS', PSCYCLES['ZERO'], 18)
+lhc_setup.add_cycle('PS', PSCYCLES['EAST T9'], 19)
+lhc_setup.add_cycle('PS', PSCYCLES['MD short'], 21)
+lhc_setup.add_cycle('PS', PSCYCLES['EAST T8'], 23)
+lhc_setup.add_cycle('PS', PSCYCLES['ZERO'], 27)
+lhc_setup.add_cycle('PS', PSCYCLES['EAST TN'], 28)
+lhc_setup.add_cycle('PS', PSCYCLES['EAST T8'], 30)
+lhc_setup.add_cycle('PS', PSCYCLES['TOF'], 32)
+lhc_setup.add_cycle('PS', PSCYCLES['ZERO'], 33)
+lhc_setup.add_cycle('PS', PSCYCLES['EAST T8'], 36)
+lhc_setup.add_cycle('PS', PSCYCLES['TOF'], 38)
+lhc_setup.add_cycle('PS', PSCYCLES['EAST TN'], 39)
+lhc_setup.add_cycle('PS', PSCYCLES['TOF'], 41)
+lhc_setup.add_cycle('PS', PSCYCLES['EAST T9'], 42)
+lhc_setup.add_cycle('PS', PSCYCLES['ZERO'], 44)
+lhc_setup.add_cycle('PS', PSCYCLES['ZERO'], 45)
+lhc_setup.add_cycle('PS', PSCYCLES['EAST T8'], 46)
+# PSB
+lhc_setup.add_cycle('PSB', PSBCYCLES['MD'], 21)
+lhc_setup.fill_empty_slots_with_cycle('PSB', PSBCYCLES['ISOLDE'])
+lhc_setup.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 48)
+lhc_setup.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 47)
+# Plot and do some basic calculations
+GridVisualizer(lhc_setup).display()
+iso_current_uA = lhc_setup.psb_supercycle.proton_flux['ISOLDE']*1.6e-19*1e6
+print(f'ISOLDE current: {iso_current_uA} uA')
 
 
 # %%
 ######################################
 # Dedicated MD supercycle grid
 ######################################
+dedicated_md = SupercycleGrid(nr_of_slots=43, name='Dedicated MD')
+# SPS
+dedicated_md.add_cycle('SPS', SPSCYCLES['MD dedicated'], 4)
+dedicated_md.add_cycle('SPS', SPSCYCLES['MD dedicated'])
+# PS
+dedicated_md.add_cycle('PS', PSCYCLES['MD short'], 14)
+dedicated_md.add_cycle('PS', PSCYCLES['TOF'], 16)
+dedicated_md.add_cycle('PS', PSCYCLES['EAST T9'], 17)
+dedicated_md.add_cycle('PS', PSCYCLES['EAST T8'], 19)
+dedicated_md.add_cycle('PS', PSCYCLES['ZERO'], 21)
+dedicated_md.add_cycle('PS', PSCYCLES['MD short'], 34)
+dedicated_md.add_cycle('PS', PSCYCLES['TOF'], 36)
+dedicated_md.add_cycle('PS', PSCYCLES['EAST TN'], 37)
+dedicated_md.add_cycle('PS', PSCYCLES['TOF'], 39)
+dedicated_md.add_cycle('PS', PSCYCLES['TOF'], 40)
+dedicated_md.add_cycle('PS', PSCYCLES['ZERO'], 41)
+# PSB
+dedicated_md.add_cycle('PSB', PSBCYCLES['MD'], 14)
+dedicated_md.add_cycle('PSB', PSBCYCLES['MD'], 34)
+dedicated_md.fill_empty_slots_with_cycle('PSB', PSBCYCLES['ISOLDE'])
+dedicated_md.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 43)
+dedicated_md.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 42)
+dedicated_md.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 41)
+# Plot and do some basic calculations
+GridVisualizer(dedicated_md, grid_size=(15, 8), dynamic_grid_size=False).display()
 
 
 # %%
 ######################################
 # Thursday MD (long parallel) supercycle grid
 ######################################
+thursday_md = SupercycleGrid(nr_of_slots=34, name='Thursday MD')
+# SPS
+thursday_md.add_cycle('SPS', SPSCYCLES['SFTPRO'], 3)
+thursday_md.add_cycle('SPS', SPSCYCLES['MD dedicated'])
+thursday_md.add_cycle('SPS', SPSCYCLES['deGauss'])
+# PS
+thursday_md.add_cycle('PS', PSCYCLES['EAST T9'], 4)
+thursday_md.add_cycle('PS', PSCYCLES['TOF'], 6)
+thursday_md.add_cycle('PS', PSCYCLES['EAST T8'], 7)
+thursday_md.add_cycle('PS', PSCYCLES['ZERO'], 9)
+thursday_md.add_cycle('PS', PSCYCLES['EAST T8'], 22)
+thursday_md.add_cycle('PS', PSCYCLES['EAST TN'], 24)
+thursday_md.add_cycle('PS', PSCYCLES['EAST T9'], 26)
+thursday_md.add_cycle('PS', PSCYCLES['TOF'], 28)
+thursday_md.add_cycle('PS', PSCYCLES['TOF'], 29)
+thursday_md.add_cycle('PS', PSCYCLES['EAST T8'], 30)
+thursday_md.add_cycle('PS', PSCYCLES['EAST T9'], 32)
+# PSB
+thursday_md.fill_empty_slots_with_cycle('PSB', PSBCYCLES['ISOLDE'])
+thursday_md.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 34)
+thursday_md.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 33)
+# Plot and do some basic calculations
+GridVisualizer(thursday_md, grid_size=(12, 8), dynamic_grid_size=False).display()
 
 
 # %%
@@ -210,18 +301,97 @@ print(f'ISOLDE current: {iso_current_uA} uA')
 ######################################
 # AWAKE with parallel MD supercycle grid
 ######################################
+awake_w_MD = SupercycleGrid(nr_of_slots=44, name='AWAKE with parallel MD')
+# SPS
+awake_w_MD.add_cycle('SPS', SPSCYCLES['SFTPRO'], 3)
+awake_w_MD.add_cycle('SPS', SPSCYCLES['AWAKE'])
+awake_w_MD.add_cycle('SPS', SPSCYCLES['MD parallel'])
+awake_w_MD.add_cycle('SPS', SPSCYCLES['SFTPRO'])
+awake_w_MD.add_cycle('SPS', SPSCYCLES['AWAKE'])
+awake_w_MD.add_cycle('SPS', SPSCYCLES['MD parallel'])
+# PS
+awake_w_MD.add_cycle('PS', PSCYCLES['EAST T9'], 4)
+awake_w_MD.add_cycle('PS', PSCYCLES['EAST TN'], 6)
+awake_w_MD.add_cycle('PS', PSCYCLES['TOF'], 8)
+awake_w_MD.add_cycle('PS', PSCYCLES['EAST T8'], 9)
+awake_w_MD.add_cycle('PS', PSCYCLES['EAST T8'], 13)
+awake_w_MD.add_cycle('PS', PSCYCLES['TOF'], 15)
+awake_w_MD.add_cycle('PS', PSCYCLES['TOF'], 16)
+awake_w_MD.add_cycle('PS', PSCYCLES['EAST TN'], 19)
+awake_w_MD.add_cycle('PS', PSCYCLES['TOF'], 21)
+awake_w_MD.add_cycle('PS', PSCYCLES['ZERO'], 22)
+awake_w_MD.add_cycle('PS', PSCYCLES['EAST T8'], 25)
+awake_w_MD.add_cycle('PS', PSCYCLES['EAST T9'], 27)
+awake_w_MD.add_cycle('PS', PSCYCLES['MD'], 29)
+awake_w_MD.add_cycle('PS', PSCYCLES['EAST T8'], 34)
+awake_w_MD.add_cycle('PS', PSCYCLES['EAST TN'], 36)
+awake_w_MD.add_cycle('PS', PSCYCLES['EAST T9'], 40)
+awake_w_MD.add_cycle('PS', PSCYCLES['EAST T8'], 42)
+# PSB
+awake_w_MD.add_cycle('PSB', PSBCYCLES['MD'], 30)
+awake_w_MD.fill_empty_slots_with_cycle('PSB', PSBCYCLES['ISOLDE'])
+awake_w_MD.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 44)
+awake_w_MD.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 43)
+# Plot and do some basic calculations
+GridVisualizer(awake_w_MD).display()
 
 
 # %%
 ######################################
 # HiRadMat supercycle grid
 ######################################
+hiradmat = SupercycleGrid(nr_of_slots=34, name='HiRadMat')
+# SPS
+hiradmat.add_cycle('SPS', SPSCYCLES['SFTPRO'], 3)
+hiradmat.add_cycle('SPS', SPSCYCLES['HiRadMat'])
+hiradmat.add_cycle('SPS', SPSCYCLES['deGauss'])
+# PS
+hiradmat.add_cycle('PS', PSCYCLES['EAST T9'], 4)
+hiradmat.add_cycle('PS', PSCYCLES['TOF'], 6)
+hiradmat.add_cycle('PS', PSCYCLES['EAST T8'], 7)
+hiradmat.add_cycle('PS', PSCYCLES['ZERO'], 9)
+hiradmat.add_cycle('PS', PSCYCLES['EAST T8'], 22)
+hiradmat.add_cycle('PS', PSCYCLES['EAST TN'], 24)
+hiradmat.add_cycle('PS', PSCYCLES['EAST T9'], 26)
+hiradmat.add_cycle('PS', PSCYCLES['TOF'], 28)
+hiradmat.add_cycle('PS', PSCYCLES['TOF'], 29)
+hiradmat.add_cycle('PS', PSCYCLES['EAST T8'], 30)
+hiradmat.add_cycle('PS', PSCYCLES['EAST T9'], 32)
+# PSB
+hiradmat.fill_empty_slots_with_cycle('PSB', PSBCYCLES['ISOLDE'])
+hiradmat.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 34)
+hiradmat.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 33)
+# Plot and do some basic calculations
+GridVisualizer(hiradmat).display()
 
 
 # %%
 ######################################
 # Scrubbing supercycle grid
 ######################################
+scrubbing = SupercycleGrid(nr_of_slots=34, name='Scrubbing')
+# SPS
+scrubbing.add_cycle('SPS', SPSCYCLES['SFTPRO'], 3)
+scrubbing.add_cycle('SPS', SPSCYCLES['Scrubbing'])
+scrubbing.add_cycle('SPS', SPSCYCLES['deGauss'])
+# PS
+scrubbing.add_cycle('PS', PSCYCLES['EAST T9'], 4)
+scrubbing.add_cycle('PS', PSCYCLES['TOF'], 6)
+scrubbing.add_cycle('PS', PSCYCLES['EAST T8'], 7)
+scrubbing.add_cycle('PS', PSCYCLES['ZERO'], 9)
+scrubbing.add_cycle('PS', PSCYCLES['EAST T8'], 22)
+scrubbing.add_cycle('PS', PSCYCLES['EAST TN'], 24)
+scrubbing.add_cycle('PS', PSCYCLES['EAST T9'], 26)
+scrubbing.add_cycle('PS', PSCYCLES['TOF'], 28)
+scrubbing.add_cycle('PS', PSCYCLES['TOF'], 29)
+scrubbing.add_cycle('PS', PSCYCLES['EAST T8'], 30)
+scrubbing.add_cycle('PS', PSCYCLES['EAST T9'], 32)
+# PSB
+scrubbing.fill_empty_slots_with_cycle('PSB', PSBCYCLES['ISOLDE'])
+scrubbing.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 34)
+scrubbing.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 33)
+# Plot and do some basic calculations
+GridVisualizer(scrubbing).display()
 
 
 #%%
@@ -232,18 +402,29 @@ supercycle_grids = {
     physics.name: physics,
     physics_w_MD.name: physics_w_MD,
     lhc_filling.name: lhc_filling,
+    lhc_setup.name: lhc_setup,
+    dedicated_md.name: dedicated_md,
+    thursday_md.name: thursday_md,
     awake.name: awake,
+    awake_w_MD.name: awake_w_MD,
+    hiradmat.name: hiradmat,
+    scrubbing.name: scrubbing,
 }
 time_shares = {
-    #physics.name: 38.8,
-    #physics_w_MD.name: 20.3,
-    #lhc_filling.name: 14,
-    #awake.name: 8,
-    physics.name: 50.0,
-    physics_w_MD.name: 20,
-    lhc_filling.name: 15,
-    awake.name: 15,
+    physics.name: 38.8,
+    physics_w_MD.name: 20.3,
+    lhc_filling.name: 14,
+    lhc_setup.name: 5,
+    dedicated_md.name: 4.4,
+    thursday_md.name: 2.6,
+    awake.name: 8,
+    awake_w_MD.name: 2.9,
+    hiradmat.name: 3,
+    scrubbing.name: 1,
 }
+# verify that time shares add up to 100
+assert sum(time_shares.values()) == 100
+# save scenario
 scenario = {
     'supercycle_grids': supercycle_grids,
     'time_shares': time_shares,

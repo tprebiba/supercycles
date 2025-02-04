@@ -91,7 +91,7 @@ class SchedulerStatisticsVisualizer():
         """
         self.scheduler = scheduler
     
-    def plot_pie(self, labels, sizes,
+    def plot_pie(self, labels, sizes, show_downtime=False,
                  figsize=(8,8), 
                  autopct='%1.1f%%', fontsize=12, rotation=90, _colors=None):
         """
@@ -100,6 +100,12 @@ class SchedulerStatisticsVisualizer():
         labels = list(labels)
         sizes = list(sizes)
         total_time = sum(sizes)
+        if show_downtime:
+            downtime = 100*(1 - self.scheduler.machine_availability)
+            for i in range(len(sizes)):
+                sizes[i] = sizes[i]*(100-downtime)/100
+            labels.append('Downtime')
+            sizes.append(downtime*total_time/100)
         
         fig, ax = plt.subplots(figsize=figsize, facecolor='white')
         fontsize=fontsize
