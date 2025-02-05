@@ -81,6 +81,7 @@ class GridVisualizer():
         plt.show()
         if save_png_to:
             fig.savefig(save_png_to, dpi=400)
+        return fig
 
 
 class SchedulerStatisticsVisualizer():
@@ -119,4 +120,5 @@ class SchedulerStatisticsVisualizer():
             autotext.set(size=fontsize)
         ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
         fig.tight_layout()
+        return fig
         
