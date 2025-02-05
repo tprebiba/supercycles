@@ -212,6 +212,7 @@ dedicated_md.add_cycle('PS', PSCYCLES['TOF'], 39)
 dedicated_md.add_cycle('PS', PSCYCLES['TOF'], 40)
 dedicated_md.add_cycle('PS', PSCYCLES['ZERO'], 41)
 # PSB
+dedicated_md.add_cycle('PSB', PSBCYCLES['MD'], 6)
 dedicated_md.add_cycle('PSB', PSBCYCLES['MD'], 14)
 dedicated_md.add_cycle('PSB', PSBCYCLES['MD'], 34)
 dedicated_md.fill_empty_slots_with_cycle('PSB', PSBCYCLES['ISOLDE'])
@@ -220,6 +221,8 @@ dedicated_md.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 42)
 dedicated_md.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 41)
 # Plot and do some basic calculations
 GridVisualizer(dedicated_md, grid_size=(15, 8), dynamic_grid_size=False).display()
+iso_current_uA = dedicated_md.psb_supercycle.proton_flux['ISOLDE']*1.6e-19*1e6
+print(f'ISOLDE current: {iso_current_uA} uA')
 
 
 # %%
@@ -249,6 +252,8 @@ thursday_md.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 34)
 thursday_md.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 33)
 # Plot and do some basic calculations
 GridVisualizer(thursday_md, grid_size=(12, 8), dynamic_grid_size=False).display()
+iso_current_uA = thursday_md.psb_supercycle.proton_flux['ISOLDE']*1.6e-19*1e6
+print(f'ISOLDE current: {iso_current_uA} uA')
 
 
 # %%
@@ -334,6 +339,8 @@ awake_w_MD.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 44)
 awake_w_MD.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 43)
 # Plot and do some basic calculations
 GridVisualizer(awake_w_MD).display()
+iso_current_uA = awake_w_MD.psb_supercycle.proton_flux['ISOLDE']*1.6e-19*1e6
+print(f'ISOLDE current: {iso_current_uA} uA')
 
 
 # %%
@@ -363,6 +370,8 @@ hiradmat.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 34)
 hiradmat.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 33)
 # Plot and do some basic calculations
 GridVisualizer(hiradmat).display()
+iso_current_uA = hiradmat.psb_supercycle.proton_flux['ISOLDE']*1.6e-19*1e6
+print(f'ISOLDE current: {iso_current_uA} uA')
 
 
 # %%
@@ -392,6 +401,8 @@ scrubbing.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 34)
 scrubbing.remove_cycle('PSB', PSBCYCLES['ISOLDE'], 33)
 # Plot and do some basic calculations
 GridVisualizer(scrubbing).display()
+iso_current_uA = scrubbing.psb_supercycle.proton_flux['ISOLDE']*1.6e-19*1e6
+print(f'ISOLDE current: {iso_current_uA} uA')
 
 
 #%%
@@ -426,6 +437,7 @@ time_shares = {
 assert sum(time_shares.values()) == 100
 # save scenario
 scenario = {
+    'title': 'Typical Run 3 supercycles',
     'supercycle_grids': supercycle_grids,
     'time_shares': time_shares,
 }

@@ -65,7 +65,8 @@ PSCYCLES = {
     'SPSMD par.':  Cycle(accelerator='PS', name='MD parallel', bps=2,
                          coupled_cycle=PSBCYCLES['Other'], number_of_injections=1, offset_to_upstream=1, 
                          color='pink'),
-    'Scrubbing':   Cycle(accelerator='PS', name='Scrubbing', bps=3, color='pink'),
+    'Scrubbing':   Cycle(accelerator='PS', name='Scrubbing', bps=3, color='pink',
+                         coupled_cycle=PSBCYCLES['Other'], number_of_injections=2, offset_to_upstream=1),
     'ZERO':        Cycle(accelerator='PS', name='ZERO', bps=1, color='#D3D3D3'),
 }
 

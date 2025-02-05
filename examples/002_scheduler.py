@@ -10,7 +10,7 @@ from supercycles.vizualizer import SchedulerStatisticsVisualizer
 ###############################
 with open('../scenarios/000_run3_typical_supercycles.pkl', 'rb') as file:
     scenario = pickle.load(file)
-scheduler = Scheduler(scenario['supercycle_grids'], scenario['time_shares'])
+scheduler = Scheduler(scenario['supercycle_grids'], scenario['time_shares'], scenario['title'])
 viz = SchedulerStatisticsVisualizer(scheduler)
 
 #%%
@@ -27,3 +27,8 @@ viz.plot_pie(scheduler.ps_total_cycle_times.keys(), scheduler.ps_total_cycle_tim
              autopct = '%1.1f%%', show_downtime=False)
 viz.plot_pie(scheduler.psb_total_cycle_times.keys(), scheduler.psb_total_cycle_times.values(),
              autopct = '%1.1f%%', show_downtime=False)
+
+# %%
+df = scheduler.summary_table()
+df
+# %%
