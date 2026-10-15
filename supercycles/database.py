@@ -71,7 +71,8 @@ PSCYCLES = {
     'Ion_cycle':  Cycle(accelerator='PS', name='Ion_cycle', bps=2, color='orange'),
 }
 
-_source = 'power_data/'
+import os
+_source = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'power_data') + '/'
 SPSCYCLES = {
     'SFTPRO':       Cycle(accelerator='SPS', name='SFTPRO', bps=9,
                           coupled_cycle=PSCYCLES['MTE'], number_of_injections=2, offset_to_upstream=1,
