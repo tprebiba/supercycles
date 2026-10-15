@@ -11,6 +11,7 @@ setup(
     url='',
     author='Tirsi Prebibaj',
     packages=find_packages(),
+    package_data={'supercycles': ['power_data/*.csv']},
     install_requires=[
         'numpy>=1.23.4',
         'scipy>=1.9.3',
