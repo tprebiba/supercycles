@@ -78,7 +78,7 @@ SPSCYCLES = {
                           coupled_cycle=PSCYCLES['MTE'], number_of_injections=2, offset_to_upstream=1,
                           timing_user='SFTPRO1',average_power=52.83, color='#8B0000',
                           cycle_profile_file=_source+'SFTPRO1_10point8.csv'), 
-    'SFTPRO (9.6s)':  Cycle(accelerator='SPS', name='SFTPRO', bps=13,
+    'SFTLONG':  Cycle(accelerator='SPS', name='SFTLONG', bps=13,
                           coupled_cycle=PSCYCLES['MTE'], number_of_injections=2, offset_to_upstream=1,
                           timing_user='SFTPRO1',average_power=63.60, color='#8B0000',
                           cycle_profile_file=_source+'SFTPRO1_15point6s_ESTIMATED.csv'), 
