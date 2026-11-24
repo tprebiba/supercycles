@@ -1,110 +1,361 @@
-import supercycles.acc_constants as cnst
+"""
+A supercycle of the whole injector chain (PSB, PS, SPS) on a common time grid.
+
+Model
+-----
+* A supercycle has a fixed period of ``period_bp`` basic periods (BP), shared by
+  all machines. BPs are numbered 1..period_bp.
+* The supercycle repeats. A position outside 1..period_bp is wrapped around:
+  BP 0 is the last BP of the previous repetition (= period_bp), BP -1 is
+  period_bp - 1, and so on. This is how the injections of the first SPS cycle end
+  up at the end of the PS and PSB sequences, as in operation.
+* The only stored state is the list of *placements*: (cycle type, start BP,
+  parent). Timelines, counts, power and fluxes are all computed from it, so
+  they can never get out of sync.
+* Adding a cycle also places the upstream cycles injecting into it (recursively),
+  as described by the ``injections`` of its catalogue entry. These placements
+  remember their parent, so removing the parent removes them as well.
+
+Example
+-------
+>>> sc = Supercycle('Physics', period_bp=36)
+>>> sc.add('SPS', 'SFTPRO', 1)        # also places 2x PS.MTE and 2x PSB.MTE
+>>> sc.add('SPS', 'deGauss')          # right after the previous SPS cycle
+>>> sc.fill('PSB', 'ISOLDE')          # every free PSB BP
+>>> print(sc)                         # text view
+>>> sc.validate()                     # list of Issue (errors / warnings)
+>>> sc.facility_table()               # cycles, protons and flux per facility
+"""
+from dataclasses import dataclass
+from typing import Optional
+
 import numpy as np
-import warnings
+import pandas as pd
 
-class Supercycle():
-    '''
-    A simple supercycle representation for a single accelerator.
-    Inputs:
-        - accelerator [str]: accelerator name
-        - name [str]: supercycle name
-        - cycles [list]: list of Cycles in the supercycle
-    Other class variables:
-        - cycle_index [list]: list of cycle indexes in the supercycle
-        - cycle_names [list]: list of cycle names in the supercycle
-        - cycle_colors [dict]: dictionary of cycle colors in the supercycle
-        - cycle_counts [dict]: dictionary of cycle counts in the supercycle
-        - cycle_times [dict]: dictionary of cycle times in the supercycle
-        - bps [int]: number of basic periods of supercycle
-        - length [float]: supercycle length [sec]
-        - proton_flux [dict]: dictionary of proton fluxes in the supercycle
-        - integrated_power [float]: integrated power [MW]
-        - average_power [float]: average power [MW]
-    Class methods:
-        calculate_supercycle_length: calculates supercycle length and bps
-        calculate_supercycle_power: calculates supercycle integrated and average power
-        allocate_hours: allocates hours to the supercycle assuming a machine availability
-            - allocated_hours [int]: allocated hours
-            - allocated_seconds [int]: allocated seconds
-            - allocated_bps [int]: allocated basic periods
-            - number_of_supercycles_played [int]: number of supercycles played in the allocated time
-            - number_of_cycles_played [dict]: number of times each cycle is played in the allocated time
-        calculate_free_bps: calculates free BPs of the injector
-            - free_bps_per_supercycle [int]: free BPs per supercycle
-            - free_bps_total [int]: total free BPs
+from supercycles.catalogue import Catalogue, CycleType, load_catalogue
 
-    '''
-    def __init__(self, accelerator, name, cycles):
-        
-        self.accelerator = accelerator
+ELEMENTARY_CHARGE = 1.602176634e-19   # [C]
+
+
+class PlacementError(ValueError):
+    """A cycle cannot be placed (overlap, too long, ...). The supercycle is left unchanged."""
+
+
+@dataclass(frozen=True)
+class Placement:
+    """One cycle played at a given position of the supercycle."""
+    id: int
+    cycle: CycleType
+    start_bp: int                    # 1..period_bp
+    parent: Optional[int] = None     # id of the placement this cycle injects into
+
+    @property
+    def machine(self) -> str:
+        return self.cycle.machine
+
+    def __repr__(self):
+        parent = f', injects into #{self.parent}' if self.parent is not None else ''
+        return f'Placement(#{self.id} {self.cycle.key} at BP {self.start_bp}{parent})'
+
+
+@dataclass(frozen=True)
+class Issue:
+    """Result of Supercycle.validate()."""
+    level: str        # 'error' or 'warning'
+    message: str
+
+    def __str__(self):
+        return f'[{self.level}] {self.message}'
+
+
+class Supercycle:
+
+    def __init__(self, name: str, period_bp: int, catalogue: Optional[Catalogue] = None):
         self.name = name
-        self.cycles = cycles
+        self.period_bp = int(period_bp)
+        self.catalogue = catalogue if catalogue is not None else load_catalogue()
+        self.placements = {}      # id -> Placement (insertion order is kept)
+        self._next_id = 1
+        self._cursor = {}         # machine -> BP right after the last cycle added there with add()
 
-        if len(self.cycles)>0:
-            self.cycle_indices = np.arange(len(self.cycles))+1
-            self.cycle_names = []
-            self.cycle_colors = {}
-            self.cycle_counts = {}
-            self.cycle_times = {}
-            self.proton_flux = {}
-            for cycle in self.cycles:
-                self.cycle_names.append(cycle.name)
-                self.cycle_colors[cycle.name] = cycle.color
-                self.cycle_counts[cycle.name] = 0
-                self.cycle_times[cycle.name] = 0
-                self.proton_flux[cycle.name] = 0
-            for cycle in self.cycles:
-                self.cycle_counts[cycle.name] += 1
-                self.cycle_times[cycle.name] += cycle.length
-                self.proton_flux[cycle.name] += cycle.total_intensity_per_cycle*cycle.transmission_to_destination
-            self.bps, self.length = self._calculate_supercycle_length()
-            self.proton_flux = {cycle: self.proton_flux[cycle]/self.length for cycle in self.proton_flux}
-            self.integrated_power, self.average_power = self._calculate_supercycle_power()
+    def __repr__(self):
+        return (f"Supercycle('{self.name}', {self.period_bp} BP = {self.length_s:.1f} s, "
+                f"{len(self.placements)} placements)")
 
+    # ------------------------------------------------------------------ time
+    @property
+    def length_s(self) -> float:
+        return round(self.period_bp * self.catalogue.basic_period_s, 6)
 
-    def _calculate_supercycle_length(self):
-        '''
-        Calculate super cycle length and bps.
-        '''
-        bps = 0
-        length = 0
-        for cycle in self.cycles:
-            bps += cycle.bps
-            length += cycle.length
-        if length > cnst.SC_LENGTH_LIMIT:
-            #raise ValueError('%s supercycle length: %1.2f seconds - exceeds limit of %1.2f seconds'%(self.name,self.length,cnst.SC_LENGTH_LIMIT))
-            #warnings.warn(f'{self.name} supercycle length: {length} seconds - exceeds limit of {cnst.SC_LENGTH_LIMIT} seconds')
-            print(f'{self.name} supercycle length: {length} seconds - exceeds limit of {cnst.SC_LENGTH_LIMIT} seconds')
-        return bps, length
+    @property
+    def machines(self) -> list:
+        return list(self.catalogue.machines)
 
+    def wrap(self, bp: int) -> int:
+        """Bring any BP number into 1..period_bp (the supercycle repeats)."""
+        return (bp - 1) % self.period_bp + 1
 
-    def _calculate_supercycle_power(self):
-        '''
-        Calculate super cycle average power.
-        '''
-        integrated_power = 0
-        for cycle in self.cycles:
-            integrated_power += cycle.length*cycle.average_power
-        average_power = integrated_power/self.length
-        if average_power > cnst.AVERAGE_POWER_LIMIT[self.accelerator]:
-            #raise ValueError('%s supercycle has an average power of: %1.2f MW exceeds limit of %1.2f MW for %s'%(self.name,average_power,cnst.AVERAGE_POWER_LIMIT[self.accelerator], self.accelerator))
-            #warnings.warn(f'{self.name} supercycle has an average power of: {average_power} MW exceeds limit of {cnst.AVERAGE_POWER_LIMIT[self.accelerator]} MW for {self.accelerator}')
-            print(f'{self.name} supercycle has an average power of: {average_power} MW exceeds limit of {cnst.AVERAGE_POWER_LIMIT[self.accelerator]} MW for {self.accelerator}')
-        return integrated_power, average_power
-    
+    def occupied_bps(self, placement: Placement) -> list:
+        """BPs (1..period_bp) used by a placement, following the wrap-around."""
+        return [self.wrap(placement.start_bp + k) for k in range(placement.cycle.length_bp)]
 
-    def add_cycle(self, cycle):
-        '''
-        Add a cycle to the supercycle.
-        Does not preserve the order of the cycles.
-        '''
-        self.cycles.append(cycle)
-        self.__init__(self.accelerator, self.name, self.cycles)
+    # ------------------------------------------------------------------ editing
+    def add(self, machine: str, cycle_id: str, start_bp: Optional[int] = None,
+            with_injections: bool = True) -> Placement:
+        """
+        Place a cycle and, by default, the upstream cycles that inject into it.
 
+        start_bp : BP where the cycle starts. Values outside 1..period_bp are wrapped.
+                   None = right after the last cycle added to this machine with add()
+                   (BP 1 for the first one).
+        with_injections : False places only this cycle (e.g. to edit injections by hand).
 
-    def remove_cycle(self, cycle):
-        '''
-        Delete a cycle from the supercycle.
-        '''
-        self.cycles.remove(cycle) # removes the last occurrence of the cycle
-        self.__init__(self.accelerator, self.name, self.cycles)
+        Either everything is placed, or a PlacementError is raised and nothing changes.
+        Returns the placement of the requested cycle.
+        """
+        cycle = self.catalogue.cycle(machine, cycle_id)
+        if start_bp is None:
+            start_bp = self._cursor.get(machine, 1)
+
+        planned = []
+        self._plan(cycle, start_bp, None, with_injections, planned)
+        self._check_free(planned)
+
+        for placement in planned:
+            self.placements[placement.id] = placement
+        self._next_id += len(planned)
+        self._cursor[machine] = self.wrap(start_bp + cycle.length_bp)
+        return planned[0]
+
+    def _plan(self, cycle, start_bp, parent_id, with_injections, planned):
+        """Recursively list the placements needed for a cycle (nothing is stored here)."""
+        if cycle.length_bp > self.period_bp:
+            raise PlacementError(f'{cycle.key} ({cycle.length_bp} BP) is longer than the '
+                                 f'supercycle ({self.period_bp} BP)')
+        placement = Placement(id=self._next_id + len(planned), cycle=cycle,
+                              start_bp=self.wrap(start_bp), parent=parent_id)
+        planned.append(placement)
+        if with_injections:
+            for injection in cycle.injections:
+                upstream_cycle = self.catalogue.cycle(injection.cycle)
+                self._plan(upstream_cycle, start_bp + injection.bp_offset, placement.id,
+                           True, planned)
+
+    def _check_free(self, planned):
+        """Raise PlacementError if a planned placement overlaps anything (existing or planned)."""
+        used = {machine: {} for machine in self.machines}   # machine -> {bp: placement}
+        for placement in self.placements.values():
+            for bp in self.occupied_bps(placement):
+                used[placement.machine][bp] = placement
+        planned_by_id = {p.id: p for p in planned}
+
+        for placement in planned:
+            for bp in self.occupied_bps(placement):
+                other = used[placement.machine].get(bp)
+                if other is not None:
+                    reason = ''
+                    if placement.parent is not None:
+                        reason = f' (injection for {planned_by_id[placement.parent].cycle.key})'
+                    raise PlacementError(
+                        f'cannot place {placement.cycle.key} at BP {placement.start_bp}{reason}: '
+                        f'{placement.machine} BP {bp} is already used by {other.cycle.key} '
+                        f'(#{other.id}, starting at BP {other.start_bp})')
+                used[placement.machine][bp] = placement
+
+    def remove(self, placement) -> None:
+        """Remove a placement (object or id) and, recursively, the cycles injecting into it."""
+        placement_id = placement.id if isinstance(placement, Placement) else placement
+        if placement_id not in self.placements:
+            raise KeyError(f'no placement #{placement_id}')
+        children = [p.id for p in self.placements.values() if p.parent == placement_id]
+        for child_id in children:
+            self.remove(child_id)
+        del self.placements[placement_id]
+
+    def remove_at(self, machine: str, bp: int) -> None:
+        """Remove the cycle of ``machine`` that occupies ``bp`` (with its injections)."""
+        placement = self.timeline(machine)[self.wrap(bp) - 1]
+        if placement is None:
+            raise KeyError(f'{machine} BP {bp} is free')
+        self.remove(placement)
+
+    def fill(self, machine: str, cycle_id: str) -> int:
+        """
+        Place ``cycle_id`` (with its injections) at every free BP of ``machine`` where it fits,
+        scanning from BP 1. Returns the number of cycles added.
+        """
+        cursor = dict(self._cursor)      # filling does not move the add() cursor
+        added = 0
+        for bp in range(1, self.period_bp + 1):
+            if self.timeline(machine)[bp - 1] is not None:
+                continue
+            try:
+                self.add(machine, cycle_id, bp)
+                added += 1
+            except PlacementError:
+                pass
+        self._cursor = cursor
+        return added
+
+    def copy(self, name: Optional[str] = None) -> 'Supercycle':
+        """Independent copy (placements are immutable, so a shallow copy of the dict is enough)."""
+        new = Supercycle(name or self.name, self.period_bp, self.catalogue)
+        new.placements = dict(self.placements)
+        new._next_id = self._next_id
+        new._cursor = dict(self._cursor)
+        return new
+
+    # ------------------------------------------------------------------ views
+    def placements_on(self, machine: str) -> list:
+        """Placements of one machine, ordered by start BP."""
+        return sorted((p for p in self.placements.values() if p.machine == machine),
+                      key=lambda p: p.start_bp)
+
+    def timeline(self, machine: str) -> list:
+        """List of length period_bp: the placement occupying each BP (None = free)."""
+        slots = [None] * self.period_bp
+        for placement in self.placements_on(machine):
+            for bp in self.occupied_bps(placement):
+                slots[bp - 1] = placement
+        return slots
+
+    def free_bps(self, machine: str) -> list:
+        return [bp for bp, p in enumerate(self.timeline(machine), start=1) if p is None]
+
+    def cycle_counts(self, machine: str) -> dict:
+        """Number of times each cycle type (key) is played per supercycle."""
+        counts = {}
+        for placement in self.placements_on(machine):
+            counts[placement.cycle.key] = counts.get(placement.cycle.key, 0) + 1
+        return counts
+
+    def cycle_times_s(self, machine: str) -> dict:
+        """Time [s] per supercycle spent on each cycle type (key)."""
+        return {key: count * self.catalogue.length_s(self.catalogue.cycle(key))
+                for key, count in self.cycle_counts(machine).items()}
+
+    def average_power_MW(self, machine: str) -> float:
+        """Supercycle-averaged magnet power. Free BPs and cycles without a value count as 0 MW."""
+        energy_MJ = 0.0
+        for placement in self.placements_on(machine):
+            power = placement.cycle.average_power_MW or 0.0
+            energy_MJ += power * self.catalogue.length_s(placement.cycle)
+        return energy_MJ / self.length_s
+
+    def facility_table(self) -> pd.DataFrame:
+        """
+        Beam delivered per facility, for one repetition of the supercycle.
+        protons_per_supercycle is NaN when the intensity of a cycle is not in the catalogue.
+        """
+        rows = {}
+        for placement in self.placements.values():
+            beam = placement.cycle.beam
+            if beam is None:
+                continue
+            row = rows.setdefault(beam.destination, {'cycles_per_supercycle': 0, 'protons': 0.0})
+            row['cycles_per_supercycle'] += 1
+            row['protons'] = np.nan if beam.delivered is None else row['protons'] + beam.delivered
+
+        table = []
+        for facility_id, row in rows.items():
+            flux = row['protons'] / self.length_s
+            table.append({
+                'facility': facility_id,
+                'machine': self.catalogue.facilities[facility_id].machine,
+                'cycles_per_supercycle': row['cycles_per_supercycle'],
+                'protons_per_supercycle': row['protons'],
+                'flux_p_per_s': flux,
+                'current_uA': flux * ELEMENTARY_CHARGE * 1e6,
+            })
+        return pd.DataFrame(table)
+
+    def to_dataframe(self) -> pd.DataFrame:
+        """All placements as a table (one row per cycle played)."""
+        rows = []
+        for machine in self.machines:
+            for p in self.placements_on(machine):
+                rows.append({'id': p.id, 'machine': machine, 'cycle': p.cycle.key,
+                             'start_bp': p.start_bp,
+                             'end_bp': self.wrap(p.start_bp + p.cycle.length_bp - 1),
+                             'length_bp': p.cycle.length_bp, 'parent': p.parent})
+        table = pd.DataFrame(rows)
+        if not table.empty:
+            table['parent'] = table['parent'].astype('Int64')     # integer ids with <NA> for top-level cycles
+        return table
+
+    # ------------------------------------------------------------------ checks
+    def validate(self) -> list:
+        """Check the supercycle against the limits of the catalogue. Returns a list of Issue."""
+        issues = []
+        if self.length_s > self.catalogue.max_supercycle_length_s:
+            issues.append(Issue('error', f'length {self.length_s:.1f} s exceeds the limit of '
+                                         f'{self.catalogue.max_supercycle_length_s:.1f} s'))
+
+        for machine in self.machines:
+            limit = self.catalogue.machines[machine].average_power_limit_MW
+            if limit is not None:
+                power = self.average_power_MW(machine)
+                if power > limit:
+                    issues.append(Issue('error', f'{machine} average power {power:.2f} MW exceeds '
+                                                 f'the limit of {limit:.2f} MW'))
+                unknown = sorted({p.cycle.key for p in self.placements_on(machine)
+                                  if p.cycle.average_power_MW is None})
+                if unknown:
+                    issues.append(Issue('warning', f'{machine}: no power value for {unknown} '
+                                                   f'(counted as 0 MW)'))
+            free = self.free_bps(machine)
+            if free:
+                issues.append(Issue('warning', f'{machine}: {len(free)} free BP(s): {free}'))
+
+        for placement in self.placements.values():
+            expected = len(placement.cycle.injections)
+            found = sum(1 for p in self.placements.values() if p.parent == placement.id)
+            if found != expected:
+                issues.append(Issue('warning', f'{placement.cycle.key} at BP {placement.start_bp} '
+                                               f'has {found} of its {expected} injections'))
+        return issues
+
+    # ------------------------------------------------------------------ text view
+    def show(self, cell_width: int = 4) -> str:
+        """
+        Text grid: one row per machine (upstream at the bottom), one column per BP.
+        Each cycle is drawn as its id written across the BPs it occupies, padded with '-'
+        ('.' = free BP). A cycle wrapping around the end is drawn in two pieces.
+        """
+        w = cell_width
+        lines = [f'{self!r}', 'BP   ' + ''.join(f'{bp:<{w}}' for bp in range(1, self.period_bp + 1))]
+        for machine in reversed(self.machines):
+            row = list(''.join('.'.ljust(w) for _ in range(self.period_bp)))
+            for p in self.placements_on(machine):
+                first_piece = min(p.cycle.length_bp, self.period_bp - p.start_bp + 1)
+                pieces = [(p.start_bp, first_piece)]
+                if first_piece < p.cycle.length_bp:
+                    pieces.append((1, p.cycle.length_bp - first_piece))
+                for start, width in pieces:
+                    text = p.cycle.id[:width * w - 1].ljust(width * w - 1, '-') + ' '
+                    row[(start - 1) * w:(start - 1 + width) * w] = list(text)
+            lines.append(f'{machine:<5}' + ''.join(row))
+        return '\n'.join(lines)
+
+    def __str__(self):
+        return self.show()
+
+    # ------------------------------------------------------------------ magnet current
+    def magnet_current(self, machine: str = 'SPS'):
+        """
+        Magnet current over one supercycle, built from the catalogue profiles.
+        Returns (time [s], current [A]); NaN separates cycles and marks cycles without profile.
+        """
+        times, currents = [], []
+        for placement in self.placements_on(machine):
+            t0 = (placement.start_bp - 1) * self.catalogue.basic_period_s
+            if placement.cycle.profile is None:
+                length = self.catalogue.length_s(placement.cycle)
+                t, current = np.array([0.0, length]), np.array([np.nan, np.nan])
+            else:
+                t, current = self.catalogue.profile(placement.cycle)
+            times += [t0 + t, [np.nan]]
+            currents += [current, [np.nan]]
+        if not times:
+            return np.array([]), np.array([])
+        return np.concatenate(times), np.concatenate(currents)

@@ -1,0 +1,12 @@
+# Global settings of the injector complex and of each machine.
+
+basic_period_s: 1.2              # length of one basic period (BP)
+max_supercycle_length_s: 90      # longest supercycle allowed
+
+# Order matters: from the first machine of the chain to the last one.
+# upstream: machine whose cycles inject into this one (null = source machine).
+# average_power_limit_MW: limit on the supercycle-averaged magnet power (null = no limit modelled).
+machines:
+  PSB: {upstream: null, average_power_limit_MW: null}
+  PS:  {upstream: PSB,  average_power_limit_MW: null}    # ion cycles come from LEIR (not modelled yet)
+  SPS: {upstream: PS,   average_power_limit_MW: 41.1}

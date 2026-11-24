@@ -1,0 +1,261 @@
+# SPS cycles. Injections are PS cycles; bp_offset is relative to the SPS cycle start.
+# average_power_MW: average magnet power of the cycle (values from the old database).
+# profile: magnet current file in supercycles/data/profiles/.
+
+- id: SFTPRO
+  name: "SFTPRO"
+  length_bp: 9
+  user: SFTPRO1
+  colour: "#8B0000"
+  average_power_MW: 52.83
+  profile: SFTPRO1_10point8.csv
+  beam: {destination: NorthArea, intensity: 4.2e+13, transmission: 0.92169}
+  injections:
+    - {cycle: PS.MTE, bp_offset: -1}
+    - {cycle: PS.MTE, bp_offset: 0}
+
+- id: SFTLONG
+  name: "SFTLONG"
+  length_bp: 13
+  user: SFTPRO1
+  colour: "#8B0000"
+  average_power_MW: 63.93
+  profile: SFTPRO1_15point6s_ESTIMATED.csv
+  beam: {destination: NorthArea, intensity: 4.2e+13, transmission: 0.92169}
+  injections:
+    - {cycle: PS.MTE, bp_offset: -1}
+    - {cycle: PS.MTE, bp_offset: 0}
+
+- id: LHC_filling
+  name: "LHC filling"
+  length_bp: 20
+  user: LHC25NS
+  colour: "#FFD700"
+  average_power_MW: 18.03
+  profile: LHC25NS_LHC_filling_24s.csv
+  beam: {destination: LHC}
+  injections:
+    - {cycle: PS.LHC_filling, bp_offset: -2}
+    - {cycle: PS.LHC_filling, bp_offset: 1}
+    - {cycle: PS.LHC_filling, bp_offset: 4}
+    - {cycle: PS.LHC_filling, bp_offset: 7}
+
+- id: LHC_pilot
+  name: "LHC pilot"
+  length_bp: 11
+  user: LHCPILOT
+  colour: "#FFD700"
+  average_power_MW: 32.5
+  profile: LHCPILOT_13point2s.csv
+  beam: {destination: LHC}
+  injections:
+    - {cycle: PS.LHC_pilot, bp_offset: -1}
+
+- id: MD_dedicated
+  name: "MD dedicated"
+  length_bp: 20
+  user: MD5
+  colour: "pink"
+  average_power_MW: 18.03
+  profile: LHC25NS_MD_dedicated_24s.csv
+  beam: {destination: MD}
+  injections:
+    - {cycle: PS.SPSMD_dedicated, bp_offset: -2}
+    - {cycle: PS.SPSMD_dedicated, bp_offset: 1}
+    - {cycle: PS.SPSMD_dedicated, bp_offset: 4}
+    - {cycle: PS.SPSMD_dedicated, bp_offset: 7}
+
+- id: MD_parallel
+  name: "MD parallel"
+  length_bp: 6
+  user: MD5
+  colour: "pink"
+  average_power_MW: 2.81
+  profile: MD5_MD_parallel_7point2s.csv
+  beam: {destination: MD}
+  injections:
+    - {cycle: PS.SPSMD_parallel, bp_offset: -1}
+
+- id: AWAKE
+  name: "AWAKE"
+  length_bp: 6
+  user: AWAKE1
+  colour: "royalblue"
+  average_power_MW: 31.19
+  profile: AWAKE1_7point2s.csv
+  beam: {destination: AWAKE}
+  injections:
+    - {cycle: PS.AWAKE, bp_offset: -1}
+
+- id: HIRADMT1
+  name: "HIRADMT1"
+  length_bp: 7
+  user: HIRADMT1
+  colour: "royalblue"
+  average_power_MW: 35.1
+  profile: HiRadMat_Pilot.csv
+  beam: {destination: HiRadMat}
+  injections:
+    - {cycle: PS.HiRadMat, bp_offset: -2}
+
+- id: HIRADMT2
+  name: "HIRADMT2"
+  length_bp: 20
+  user: HIRADMT2
+  colour: "royalblue"
+  average_power_MW: 17.52
+  profile: HIRADMT2_24s.csv
+  beam: {destination: HiRadMat}
+  injections:
+    - {cycle: PS.HiRadMat, bp_offset: -2}
+    - {cycle: PS.HiRadMat, bp_offset: 1}
+    - {cycle: PS.HiRadMat, bp_offset: 4}
+    - {cycle: PS.HiRadMat, bp_offset: 7}
+
+- id: Scrubbing
+  name: "Scrubbing"
+  length_bp: 20
+  colour: "pink"
+  average_power_MW: 18.03
+  profile: LHC25NS_Scrubbing_24s.csv
+  beam: {destination: MD}
+  injections:
+    - {cycle: PS.Scrubbing, bp_offset: -2}
+    - {cycle: PS.Scrubbing, bp_offset: 1}
+    - {cycle: PS.Scrubbing, bp_offset: 4}
+    - {cycle: PS.Scrubbing, bp_offset: 7}
+
+- id: Zero
+  name: "Zero"
+  length_bp: 1
+  user: ZERO
+  colour: "#D3D3D3"
+  average_power_MW: 1.2
+  profile: Zero_1point2s.csv
+
+- id: deGauss
+  name: "deGauss"
+  length_bp: 3
+  user: MD1
+  colour: "#D3D3D3"
+  average_power_MW: 4.77
+  profile: MD1_deGauss_3point6s.csv
+
+- id: deGauss_flat
+  name: "deGauss"
+  length_bp: 3
+  user: MD1
+  colour: "#D3D3D3"
+  average_power_MW: 0.27
+  profile: MD1_deGauss_3point6s_flat.csv
+
+- id: deGauss_10p8
+  name: "deGauss"
+  length_bp: 9
+  user: MD1
+  colour: "#D3D3D3"
+  average_power_MW: 2.69
+  profile: MD1_deGauss_10point8s_ESTIMATED.csv
+
+- id: SHiP
+  name: "SHiP"
+  length_bp: 6
+  user: SFTPRO3
+  colour: "green"
+  average_power_MW: 34.88
+  profile: SFTPRO1_7point2s_ESTIMATED.csv
+  beam: {destination: SHiP, intensity: 4.2e+13, transmission: 0.94128804}
+  injections:
+    - {cycle: PS.MTE, bp_offset: -1}
+    - {cycle: PS.MTE, bp_offset: 0}
+
+- id: SFTION1
+  name: "SFTION1"
+  length_bp: 22
+  user: SFTION1
+  colour: "orange"
+  average_power_MW: 21.32
+  profile: SFTION1_MBI.csv
+  beam: {destination: NorthArea}
+  injections:
+    - {cycle: PS.Ion, bp_offset: -1}
+    - {cycle: PS.Ion, bp_offset: 1}
+    - {cycle: PS.Ion, bp_offset: 3}
+    - {cycle: PS.Ion, bp_offset: 5}
+
+- id: SFTION2
+  name: "SFTION2"
+  length_bp: 25
+  user: SFTION2
+  colour: "orange"
+  average_power_MW: 18.77
+  profile: SFTION2_MBI.csv
+  beam: {destination: NorthArea}
+  injections:
+    - {cycle: PS.Ion, bp_offset: -1}
+    - {cycle: PS.Ion, bp_offset: 1}
+    - {cycle: PS.Ion, bp_offset: 3}
+    - {cycle: PS.Ion, bp_offset: 5}
+
+- id: LHCION_4inj
+  name: "LHCION_4inj"
+  length_bp: 13
+  user: LHCION1
+  colour: "orange"
+  average_power_MW: 24.52
+  profile: LHCION_4inj_MBI.csv
+  beam: {destination: LHC}
+  injections:
+    - {cycle: PS.Ion, bp_offset: -1}
+    - {cycle: PS.Ion, bp_offset: 1}
+    - {cycle: PS.Ion, bp_offset: 3}
+    - {cycle: PS.Ion, bp_offset: 5}
+
+- id: LHCION_pilot
+  name: "LHCION_pilot"
+  length_bp: 7
+  user: LHCION2
+  colour: "orange"
+  average_power_MW: 45.56
+  profile: LHCION_pilot_MBI.csv
+  beam: {destination: LHC}
+  injections:
+    - {cycle: PS.Ion, bp_offset: -1}
+
+- id: LHCION_4inj_nom
+  name: "LHCION_4inj_nom"
+  length_bp: 16
+  user: LHCION3
+  colour: "orange"
+  average_power_MW: 19.98
+  profile: LHCION_4inj_nom_MBI.csv
+  beam: {destination: LHC}
+  injections:
+    - {cycle: PS.Ion, bp_offset: -1}
+    - {cycle: PS.Ion, bp_offset: 1}
+    - {cycle: PS.Ion, bp_offset: 3}
+    - {cycle: PS.Ion, bp_offset: 5}
+
+- id: LHCION_14inj_slip_stacking
+  name: "LHCION_14inj_slip_stacking"
+  length_bp: 48
+  user: NotMapped
+  colour: "orange"
+  average_power_MW: 8.39
+  profile: LHCION_14inj_slip_stacking_MBI.csv
+  beam: {destination: LHC}
+  injections:
+    - {cycle: PS.Ion, bp_offset: -1}
+    - {cycle: PS.Ion, bp_offset: 1}
+    - {cycle: PS.Ion, bp_offset: 3}
+    - {cycle: PS.Ion, bp_offset: 5}
+    - {cycle: PS.Ion, bp_offset: 7}
+    - {cycle: PS.Ion, bp_offset: 9}
+    - {cycle: PS.Ion, bp_offset: 11}
+    - {cycle: PS.Ion, bp_offset: 13}
+    - {cycle: PS.Ion, bp_offset: 15}
+    - {cycle: PS.Ion, bp_offset: 17}
+    - {cycle: PS.Ion, bp_offset: 19}
+    - {cycle: PS.Ion, bp_offset: 21}
+    - {cycle: PS.Ion, bp_offset: 23}
+    - {cycle: PS.Ion, bp_offset: 25}

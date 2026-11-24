@@ -1,0 +1,146 @@
+# PS cycles. Injections are PSB cycles; bp_offset is relative to the PS cycle start.
+
+- id: AD
+  name: "AD"
+  length_bp: 2
+  user: AD
+  colour: "#800080"
+  beam: {destination: AD}
+  injections:
+    - {cycle: PSB.AD, bp_offset: -1}
+
+- id: TOF
+  name: "TOF"
+  length_bp: 1
+  user: TOF
+  colour: "#FFA500"
+  beam: {destination: nTOF}
+  injections:
+    - {cycle: PSB.TOF, bp_offset: -1}
+
+- id: EAST
+  name: "EAST"
+  length_bp: 2
+  user: EAST1
+  colour: "#EE82EE"
+  beam: {destination: EAST}
+  injections:
+    - {cycle: PSB.EAST, bp_offset: -1}
+
+- id: EAST_T8
+  name: "EAST T8"
+  length_bp: 2
+  user: EAST1
+  colour: "#EE82EE"
+  beam: {destination: EAST_T8, intensity: 8e+11, transmission: 0.8}
+  injections:
+    - {cycle: PSB.EAST, bp_offset: -1}
+
+- id: EAST_T9
+  name: "EAST T9"
+  length_bp: 2
+  user: EAST1
+  colour: "#EE82EE"
+  beam: {destination: EAST_T9, intensity: 3e+11, transmission: 0.8}
+  injections:
+    - {cycle: PSB.EAST, bp_offset: -1}
+
+- id: EAST_TN
+  name: "EAST TN"
+  length_bp: 2
+  user: EAST1
+  colour: "#EE82EE"
+  beam: {destination: EAST_TN, intensity: 3e+11, transmission: 0.8}
+  injections:
+    - {cycle: PSB.EAST, bp_offset: -1}
+
+- id: MTE
+  name: "MTE"
+  length_bp: 1
+  user: SFTPRO1
+  colour: "#8B0000"
+  injections:
+    - {cycle: PSB.MTE, bp_offset: -1}
+
+- id: LHC_filling
+  name: "LHC"
+  length_bp: 3
+  user: LHC1
+  colour: "#FFD700"
+  injections:
+    - {cycle: PSB.LHC, bp_offset: -1}
+    - {cycle: PSB.LHC, bp_offset: 0}
+
+- id: LHC_pilot
+  name: "LHC pilot"
+  length_bp: 2
+  colour: "#FFD700"
+  injections:
+    - {cycle: PSB.LHC, bp_offset: -1}
+
+- id: AWAKE
+  name: "AWAKE"
+  length_bp: 2
+  user: AWAKE1
+  colour: "royalblue"
+  injections:
+    - {cycle: PSB.AWAKE, bp_offset: -1}
+
+- id: HiRadMat
+  name: "HiRadMat"
+  length_bp: 3
+  user: LHC1
+  colour: "royalblue"
+  injections:
+    - {cycle: PSB.HiRadMat, bp_offset: -1}
+    - {cycle: PSB.HiRadMat, bp_offset: 0}
+
+- id: MD
+  name: "MD"
+  length_bp: 3
+  colour: "pink"
+  beam: {destination: MD}
+  injections:
+    - {cycle: PSB.Other, bp_offset: -1}
+    - {cycle: PSB.Other, bp_offset: 0}
+
+- id: MD_short
+  name: "MD short"
+  length_bp: 2
+  colour: "pink"
+  beam: {destination: MD}
+  injections:
+    - {cycle: PSB.Other, bp_offset: -1}
+
+- id: SPSMD_dedicated
+  name: "MD dedicated"
+  length_bp: 3
+  colour: "pink"
+  injections:
+    - {cycle: PSB.Other, bp_offset: -1}
+    - {cycle: PSB.Other, bp_offset: 0}
+
+- id: SPSMD_parallel
+  name: "MD parallel"
+  length_bp: 2
+  colour: "pink"
+  injections:
+    - {cycle: PSB.Other, bp_offset: -1}
+
+- id: Scrubbing
+  name: "Scrubbing"
+  length_bp: 3
+  colour: "pink"
+  injections:
+    - {cycle: PSB.Other, bp_offset: -1}
+    - {cycle: PSB.Other, bp_offset: 0}
+
+- id: ZERO
+  name: "ZERO"
+  length_bp: 1
+  colour: "#D3D3D3"
+
+- id: Ion
+  name: "Ion_cycle"
+  length_bp: 2
+  colour: "orange"

@@ -1,0 +1,58 @@
+# PS Booster cycles. One BP each; PSB cycles feeding the PS have no destination.
+
+- id: ISOLDE
+  name: "ISOLDE"
+  length_bp: 1
+  colour: "#00FFFF"
+  beam: {destination: ISOLDE, intensity: 3.2e+13, transmission: 1}
+
+- id: AD
+  name: "AD"
+  length_bp: 1
+  colour: "#800080"
+
+- id: TOF
+  name: "TOF"
+  length_bp: 1
+  colour: "#FFA500"
+
+- id: EAST
+  name: "EAST"
+  length_bp: 1
+  colour: "#EE82EE"
+
+- id: MTE
+  name: "MTE"
+  length_bp: 1
+  colour: "#8B0000"
+
+- id: LHC
+  name: "LHC"
+  length_bp: 1
+  colour: "#FFD700"
+
+- id: AWAKE
+  name: "AWAKE"
+  length_bp: 1
+  colour: "royalblue"
+
+- id: HiRadMat
+  name: "HiRadMat"
+  length_bp: 1
+  colour: "royalblue"
+
+- id: ZERO
+  name: "ZERO"
+  length_bp: 1
+  colour: "#D3D3D3"
+
+- id: MD
+  name: "MD"
+  length_bp: 1
+  colour: "pink"
+  beam: {destination: MD}
+
+- id: Other
+  name: "Other"
+  length_bp: 1
+  colour: "pink"

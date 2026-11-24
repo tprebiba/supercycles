@@ -1,9 +1,11 @@
-from ._version import __version__
-from . import cycle as cycle
-from . import supercycle as supercycle
-from . import acc_constants as acc_constants
-from . import helpers as helpers
-from . import database as database
-from . import supercycle_grid as supercycle_grid
-from . import vizualizer as vizualizer
-from . import scheduler as scheduler
+"""
+supercycles: modelling of supercycles and beam sharing in the CERN injectors (PSB, PS, SPS).
+
+    Catalogue    machines, facilities and cycle types, read from supercycles/data/catalogue/*.yaml
+    Supercycle   one supercycle of the whole chain, on a fixed BP period with wrap-around
+    plotting     plot_supercycle, plot_magnet_current
+"""
+from supercycles._version import __version__
+from supercycles.catalogue import (Beam, Catalogue, CatalogueError, CycleType, Facility,
+                                   Injection, Machine, load_catalogue)
+from supercycles.supercycle import Issue, Placement, PlacementError, Supercycle

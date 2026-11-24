@@ -1,0 +1,16 @@
+# Users of the beam. A cycle's beam.destination must be one of these ids.
+# machine: the machine that delivers the beam to the facility.
+
+- {id: ISOLDE,    name: ISOLDE,              machine: PSB}
+- {id: nTOF,      name: n_TOF,               machine: PS}
+- {id: AD,        name: AD/ELENA,            machine: PS}
+- {id: EAST,      name: East Area,           machine: PS}
+- {id: EAST_T8,   name: East Area T8,        machine: PS}
+- {id: EAST_T9,   name: East Area T9,        machine: PS}
+- {id: EAST_TN,   name: East Area TN,        machine: PS}
+- {id: NorthArea, name: North Area,          machine: SPS}
+- {id: SHiP,      name: SHiP (ECN3 BDF),     machine: SPS}
+- {id: LHC,       name: LHC,                 machine: SPS}
+- {id: AWAKE,     name: AWAKE,               machine: SPS}
+- {id: HiRadMat,  name: HiRadMat,            machine: SPS}
+- {id: MD,        name: Machine development, machine: null}   # any machine
