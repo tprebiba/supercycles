@@ -18,7 +18,9 @@ setup(
         'matplotlib>=3.8.2',
         'pandas>=2.2.1',
         'pyyaml>=6.0',
-        'openpyxl',   # tests: reads reference/beam_sharing_table_example.xlsx
-        ]
+        ],
+    extras_require={
+        'gui': ['PyQt6'],   # any of PyQt5, PyQt6, PySide6 works (imported through matplotlib)
+        },
     )
 

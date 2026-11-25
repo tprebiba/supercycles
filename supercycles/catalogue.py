@@ -18,6 +18,8 @@ Example
 >>> sftpro.length_bp, cat.length_s(sftpro)
 (9, 10.8)
 """
+import copy
+import dataclasses
 import functools
 import os
 from dataclasses import dataclass
@@ -85,6 +87,7 @@ class CycleType:
     profile: Optional[str] = None                    # magnet current file in data/profiles/
     beam: Optional[Beam] = None                      # None = internal cycle (feeds the next machine)
     injections: tuple = ()                           # tuple of Injection
+    downtime: bool = False                           # True: the machine has no beam during this cycle
 
     @property
     def key(self) -> str:
@@ -226,6 +229,29 @@ class Catalogue:
         time_ms, current_A = df.iloc[:, -2].to_numpy(float), df.iloc[:, -1].to_numpy(float)
         return time_ms / 1e3, current_A
 
+    def with_beam(self, cycle_key: str, intensity: Optional[float] = None,
+                  transmission: Optional[float] = None) -> 'Catalogue':
+        """
+        Copy of the catalogue in which the beam of one cycle type is changed.
+        Use it to state a scenario assumption explicitly, e.g.
+            cat = load_catalogue().with_beam('SPS.SHiP', intensity=5.2e13)
+        The original catalogue is not modified.
+        """
+        cycle = self.cycle(cycle_key)
+        if cycle.beam is None:
+            raise ValueError(f'{cycle_key} has no beam to modify')
+        changes = {}
+        if intensity is not None:
+            changes['intensity'] = float(intensity)
+        if transmission is not None:
+            changes['transmission'] = float(transmission)
+        new_cycle = dataclasses.replace(cycle, beam=dataclasses.replace(cycle.beam, **changes))
+
+        new = copy.copy(self)
+        new.cycles = dict(self.cycles)
+        new.cycles[cycle.key] = new_cycle
+        return new
+
     def to_dataframe(self) -> pd.DataFrame:
         """Overview table of all cycle types."""
         rows = []
@@ -241,6 +267,7 @@ class Catalogue:
                 'transmission': cycle.beam.transmission if cycle.beam else None,
                 'average_power_MW': cycle.average_power_MW,
                 'injections': ', '.join(f'{i.cycle}@{i.bp_offset:+d}' for i in cycle.injections),
+                'downtime': cycle.downtime,
             })
         return pd.DataFrame(rows)
 

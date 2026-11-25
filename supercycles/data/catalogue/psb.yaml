@@ -56,3 +56,11 @@
   name: "Other"
   length_bp: 1
   colour: "pink"
+
+- id: Downtime
+  name: "Downtime"
+  length_bp: 1
+  colour: "#EEEEEE"
+  downtime: true
+  # One BP without beam in this machine. Repeat it to block a period of downtime
+  # (used by the 'Downtime' supercycle of the scenarios).

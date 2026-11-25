@@ -140,7 +140,22 @@
   length_bp: 1
   colour: "#D3D3D3"
 
+- id: dG
+  name: "dG"
+  length_bp: 1
+  colour: "#D3D3D3"
+  # 1-BP cycle without beam, labelled 'dG' in the PS rows of the reference spreadsheet
+  # (no PSB injection). Exact meaning to be confirmed.
+
 - id: Ion
   name: "Ion_cycle"
   length_bp: 2
   colour: "orange"
+
+- id: Downtime
+  name: "Downtime"
+  length_bp: 1
+  colour: "#EEEEEE"
+  downtime: true
+  # One BP without beam in this machine. Repeat it to block a period of downtime
+  # (used by the 'Downtime' supercycle of the scenarios).

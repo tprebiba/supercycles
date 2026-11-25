@@ -48,3 +48,6 @@ venv.bak/
 .DS_Store
 Thumbs.db
 .trash
+
+# Local test suite (needs ../reference_docs/, not part of the repository)
+tests/

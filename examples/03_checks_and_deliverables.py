@@ -6,7 +6,7 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))   # for scenarios/
 import pandas as pd
 from supercycles import Supercycle
-from scenarios.run3_typical import physics
+from scenarios.run3 import physics
 
 pd.set_option('display.width', 200)
 

@@ -222,6 +222,10 @@ class Supercycle:
     def free_bps(self, machine: str) -> list:
         return [bp for bp, p in enumerate(self.timeline(machine), start=1) if p is None]
 
+    def downtime_bps(self, machine: str) -> int:
+        """Number of BPs of ``machine`` occupied by downtime cycles (no beam)."""
+        return sum(p.cycle.length_bp for p in self.placements_on(machine) if p.cycle.downtime)
+
     def cycle_counts(self, machine: str) -> dict:
         """Number of times each cycle type (key) is played per supercycle."""
         counts = {}
@@ -242,10 +246,18 @@ class Supercycle:
             energy_MJ += power * self.catalogue.length_s(placement.cycle)
         return energy_MJ / self.length_s
 
+    def beam_time_s(self, machine) -> float:
+        """Time per repetition [s] in which ``machine`` has beam (its downtime BPs excluded)."""
+        if machine is None:
+            return self.length_s
+        return (self.period_bp - self.downtime_bps(machine)) * self.catalogue.basic_period_s
+
     def facility_table(self) -> pd.DataFrame:
         """
         Beam delivered per facility, for one repetition of the supercycle.
         protons_per_supercycle is NaN when the intensity of a cycle is not in the catalogue.
+        Flux and current are over the time the delivering machine has beam: in a supercycle with
+        downtime (e.g. PSB down a quarter of the time) they are the values while the beam is on.
         """
         rows = {}
         for placement in self.placements.values():
@@ -258,10 +270,11 @@ class Supercycle:
 
         table = []
         for facility_id, row in rows.items():
-            flux = row['protons'] / self.length_s
+            machine = self.catalogue.facilities[facility_id].machine
+            flux = row['protons'] / self.beam_time_s(machine)
             table.append({
                 'facility': facility_id,
-                'machine': self.catalogue.facilities[facility_id].machine,
+                'machine': machine,
                 'cycles_per_supercycle': row['cycles_per_supercycle'],
                 'protons_per_supercycle': row['protons'],
                 'flux_p_per_s': flux,

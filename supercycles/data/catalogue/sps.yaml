@@ -51,6 +51,20 @@
   injections:
     - {cycle: PS.LHC_pilot, bp_offset: -1}
 
+- id: LHC_pilot_2inj
+  name: "LHC pilot (2 inj.)"
+  length_bp: 11
+  user: LHCPILOT
+  colour: "#FFD700"
+  average_power_MW: 32.5
+  profile: LHCPILOT_13point2s.csv
+  beam: {destination: LHC}
+  injections:
+    - {cycle: PS.LHC_pilot, bp_offset: -1}
+    - {cycle: PS.LHC_pilot, bp_offset: 1}
+  # LHC setup cycle with two PS injections, as assumed in the Run 4 / SHiP sheets of the
+  # reference spreadsheet. Same length, power and profile as LHC_pilot.
+
 - id: MD_dedicated
   name: "MD dedicated"
   length_bp: 20
@@ -259,3 +273,12 @@
     - {cycle: PS.Ion, bp_offset: 21}
     - {cycle: PS.Ion, bp_offset: 23}
     - {cycle: PS.Ion, bp_offset: 25}
+
+- id: Downtime
+  name: "Downtime"
+  length_bp: 1
+  colour: "#EEEEEE"
+  downtime: true
+  average_power_MW: 0.0
+  # One BP without beam in this machine. Repeat it to block a period of downtime
+  # (used by the 'Downtime' supercycle of the scenarios).

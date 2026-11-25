@@ -6,7 +6,7 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))   # for scenarios/
 import matplotlib.pyplot as plt
 from supercycles.plotting import plot_supercycle, plot_magnet_current
-from scenarios.run3_typical import physics
+from scenarios.run3 import physics
 
 sc = physics()
 
