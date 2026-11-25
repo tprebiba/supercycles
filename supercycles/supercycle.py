@@ -25,6 +25,13 @@ Example
 >>> print(sc)                         # text view
 >>> sc.validate()                     # list of Issue (errors / warnings)
 >>> sc.facility_table()               # cycles, protons and flux per facility
+
+Editing an existing supercycle (the period follows; injections keep their offsets):
+>>> sc.append('SPS', 'AWAKE')         # after the last SPS cycle, lengthening if there is no room
+>>> sc.insert('SPS', 'AWAKE', 10)     # at BP 10, the cycles from there on move later
+>>> sc.conflicts('SPS', 'AWAKE', 10)  # what is in the way;  sc.replace(...) removes it and places
+>>> sc.insert_bps(13, 2)              # empty BPs;  sc.remove_bps(13, 2) is the inverse
+>>> Supercycle.from_dict(sc.to_dict())   # exact copy, through a plain dict (used for the YAML files)
 """
 from dataclasses import dataclass
 from typing import Optional
@@ -205,6 +212,267 @@ class Supercycle:
         new._cursor = dict(self._cursor)
         return new
 
+    # ------------------------------------------------------------------ editing: structure
+    # These methods change the period of the supercycle. Each cycle keeps its injections at the
+    # same offsets (also those wrapped around the end), and every method either succeeds
+    # completely or raises PlacementError and changes nothing.
+
+    def root(self, placement) -> Placement:
+        """Top-level placement of the tree a placement belongs to (itself if it has no parent)."""
+        placement = placement if isinstance(placement, Placement) else self.placements[placement]
+        while placement.parent is not None:
+            placement = self.placements[placement.parent]
+        return placement
+
+    def conflicts(self, machine: str, cycle_id: str, start_bp: int, with_injections: bool = True) -> list:
+        """
+        Top-level placements that stop ``cycle_id`` (and its injections) from being placed at
+        ``start_bp``: the cycles to remove, with their own injections, to make room for it.
+        Empty list = it can be placed as is.
+        """
+        planned = []
+        self._plan(self.catalogue.cycle(machine, cycle_id), start_bp, None, with_injections, planned)
+        roots = {}
+        for placement in planned:
+            timeline = self.timeline(placement.machine)
+            for bp in self.occupied_bps(placement):
+                if timeline[bp - 1] is not None:
+                    root = self.root(timeline[bp - 1])
+                    roots[root.id] = root
+        return list(roots.values())
+
+    def unwrapped_start(self, placement) -> int:
+        """
+        Start of a placement counted from BP 1 of its own top-level cycle, without wrap-around:
+        e.g. 0 or -1 for the injections of a cycle starting at BP 1 (shown at the end of the
+        supercycle). Top-level placements return their start_bp.
+        """
+        placement = placement if isinstance(placement, Placement) else self.placements[placement]
+        if placement.parent is None:
+            return placement.start_bp
+        parent = self.placements[placement.parent]
+        return self.unwrapped_start(parent) + self._injection_offset(parent, placement)
+
+    def _injection_offset(self, parent: Placement, child: Placement) -> int:
+        """Offset [BP] of an injection relative to the start of the cycle it injects into."""
+        # The children of a placement were planned in the order of the catalogue injections.
+        children = sorted((p for p in self.placements.values() if p.parent == parent.id), key=lambda p: p.id)
+        injections = parent.cycle.injections
+        if len(children) == len(injections):
+            injection = injections[children.index(child)]
+            if self.wrap(parent.start_bp + injection.bp_offset) == child.start_bp:
+                return injection.bp_offset
+        # injections edited by hand: take the shortest signed distance around the supercycle
+        delta = (child.start_bp - parent.start_bp) % self.period_bp
+        return delta - self.period_bp if delta > self.period_bp // 2 else delta
+
+    def _shift(self, at_bp: int, shift: int, new_period: int) -> None:
+        """
+        Move every top-level cycle starting at or after ``at_bp`` by ``shift`` BPs (with its
+        injections), and set the period to ``new_period``. Raises PlacementError on overlaps.
+        """
+        moved = {}
+        for placement in self.placements.values():
+            root_start = self.root(placement).start_bp
+            new_start = self.unwrapped_start(placement) + (shift if root_start >= at_bp else 0)
+            moved[placement.id] = (placement, new_start)
+
+        old_period, old_placements = self.period_bp, self.placements
+        self.period_bp = new_period
+        self.placements = {pid: Placement(p.id, p.cycle, self.wrap(start), p.parent)
+                           for pid, (p, start) in moved.items()}
+        try:
+            self._check_no_overlap()
+        except PlacementError:
+            self.period_bp, self.placements = old_period, old_placements
+            raise
+        self._cursor = {machine: self.wrap(bp + shift) if bp >= at_bp else bp
+                        for machine, bp in self._cursor.items()}
+
+    def _check_no_overlap(self) -> None:
+        """Raise PlacementError if two placements of the same machine share a BP."""
+        for machine in self.machines:
+            used = {}
+            for placement in self.placements_on(machine):
+                if placement.cycle.length_bp > self.period_bp:
+                    raise PlacementError(f'{placement.cycle.key} ({placement.cycle.length_bp} BP) is '
+                                         f'longer than the supercycle ({self.period_bp} BP)')
+                for bp in self.occupied_bps(placement):
+                    if bp in used:
+                        raise PlacementError(f'{machine} BP {bp} would be used by both {used[bp].cycle.key} '
+                                             f'(#{used[bp].id}) and {placement.cycle.key} (#{placement.id})')
+                    used[bp] = placement
+
+    def insert_bps(self, at_bp: int, n: int = 1) -> None:
+        """
+        Lengthen the supercycle by ``n`` empty BPs inserted before BP ``at_bp`` (1..period_bp+1).
+        Top-level cycles starting at or after ``at_bp`` move ``n`` BPs later, with their
+        injections. ``at_bp = period_bp + 1`` adds the BPs at the end, before the injections
+        that wrap around to the end (those of a cycle at BP 1).
+        """
+        if n < 1:
+            raise ValueError('n must be >= 1')
+        if not 1 <= at_bp <= self.period_bp + 1:
+            raise ValueError(f'at_bp must be in 1..{self.period_bp + 1}')
+        self._shift(at_bp, n, self.period_bp + n)
+
+    def remove_bps(self, at_bp: int, n: int = 1, remove_cycles: bool = False) -> None:
+        """
+        Shorten the supercycle by removing BPs ``at_bp`` .. ``at_bp + n - 1`` (the inverse of
+        insert_bps). Top-level cycles starting after them move ``n`` BPs earlier, with their
+        injections. No top-level cycle may start inside the removed BPs (``remove_cycles=True``
+        removes those cycles first, with their injections; see cycles_starting_in()), and nothing
+        may end up overlapping; otherwise a PlacementError is raised and nothing changes.
+        Because injections come earlier than their cycle, the free BPs of an upstream machine are
+        usually a little earlier than those of the SPS: give the BPs of the SPS (or of the machine
+        where the gap is) and the upstream gaps follow.
+        """
+        if n < 1 or not 1 <= at_bp <= self.period_bp - n + 1:
+            raise ValueError(f'cannot remove {n} BP(s) from BP {at_bp} of a {self.period_bp} BP supercycle')
+        in_the_way = self.cycles_starting_in(at_bp, n)
+        if in_the_way and not remove_cycles:
+            names = ', '.join(f'{p.cycle.key} at BP {p.start_bp}' for p in in_the_way)
+            raise PlacementError(f'cannot remove BP {at_bp}..{at_bp + n - 1}: {names} start(s) there')
+        saved = self.copy()
+        try:
+            for placement in in_the_way:
+                self.remove(placement)
+            self._shift(at_bp + n, -n, self.period_bp - n)
+        except PlacementError:
+            self.period_bp, self.placements, self._cursor = saved.period_bp, saved.placements, saved._cursor
+            raise
+
+    def cycles_starting_in(self, at_bp: int, n: int = 1) -> list:
+        """Top-level placements (any machine) starting in BPs ``at_bp`` .. ``at_bp + n - 1``."""
+        return [p for p in self.placements.values() if p.parent is None and at_bp <= p.start_bp < at_bp + n]
+
+    def last_bp(self, machine: str) -> int:
+        """
+        Last BP used by the cycles of ``machine``, ignoring the injections that wrap around to the
+        end of the supercycle (0 if the machine is empty).
+        """
+        ends = [self.unwrapped_start(p) + p.cycle.length_bp - 1 for p in self.placements_on(machine)
+                if self.unwrapped_start(p) >= 1]
+        return min(max(ends, default=0), self.period_bp)
+
+    def insert(self, machine: str, cycle_id: str, at_bp: Optional[int] = None,
+               replace_conflicts: bool = False) -> Placement:
+        """
+        Insert a cycle (with its injections) at ``at_bp`` and lengthen the supercycle by its length:
+        the cycles from ``at_bp`` on move later. If ``at_bp`` falls inside a cycle of ``machine``,
+        the new cycle goes before that cycle. ``at_bp = None`` appends it after the last cycle of
+        ``machine``. If its injections still collide with cycles of the upstream machines,
+        ``replace_conflicts=True`` removes those cycles (see replace()); otherwise a PlacementError
+        is raised. Either everything succeeds or nothing changes.
+        """
+        cycle = self.catalogue.cycle(machine, cycle_id)
+        if at_bp is None:
+            at_bp = self.last_bp(machine) + 1
+        else:
+            occupant = self.timeline(machine)[self.wrap(at_bp) - 1]
+            if occupant is not None and self.unwrapped_start(occupant) >= 1:
+                at_bp = occupant.start_bp            # before the cycle that is there
+        saved = self.copy()
+        try:
+            self.insert_bps(at_bp, cycle.length_bp)
+            if replace_conflicts:
+                return self.replace(machine, cycle_id, at_bp)
+            return self.add(machine, cycle_id, at_bp)
+        except PlacementError:
+            self.period_bp, self.placements, self._cursor = saved.period_bp, saved.placements, saved._cursor
+            raise
+
+    def end_slot(self, machine: str, cycle_id: str) -> Optional[int]:
+        """
+        BP right after the last cycle of ``machine`` if ``cycle_id`` fits in the free BPs there
+        (without lengthening the supercycle), else None. Only ``machine`` is checked, not the
+        upstream machines that its injections need.
+        """
+        at_bp = self.last_bp(machine) + 1
+        length = self.catalogue.cycle(machine, cycle_id).length_bp
+        if at_bp + length - 1 > self.period_bp:
+            return None
+        timeline = self.timeline(machine)
+        if any(timeline[bp - 1] is not None for bp in range(at_bp, at_bp + length)):
+            return None
+        return at_bp
+
+    def append(self, machine: str, cycle_id: str, replace_conflicts: bool = False) -> Placement:
+        """
+        Place a cycle (with its injections) right after the last cycle of ``machine``: in the free
+        BPs there if it fits (see end_slot()), otherwise by lengthening the supercycle (insert()).
+        ``replace_conflicts=True`` removes the upstream cycles in the way of its injections.
+        """
+        at_bp = self.end_slot(machine, cycle_id)
+        if at_bp is None:
+            return self.insert(machine, cycle_id, None, replace_conflicts)
+        if replace_conflicts:
+            return self.replace(machine, cycle_id, at_bp)
+        return self.add(machine, cycle_id, at_bp)
+
+    def replace(self, machine: str, cycle_id: str, start_bp: int) -> Placement:
+        """
+        Place a cycle (with its injections), first removing the cycles in its way (with their own
+        injections, see conflicts()). Either everything succeeds or nothing changes.
+        """
+        saved = self.copy()
+        try:
+            for root in self.conflicts(machine, cycle_id, start_bp):
+                self.remove(root)
+            return self.add(machine, cycle_id, start_bp)
+        except PlacementError:
+            self.placements, self._cursor = saved.placements, saved._cursor
+            raise
+
+    # ------------------------------------------------------------------ saving
+    def to_dict(self) -> dict:
+        """
+        Plain description of the supercycle (for YAML files). Every placement is listed with its
+        id and parent, so that from_dict() rebuilds exactly the same supercycle.
+        """
+        placements = []
+        for p in self.placements.values():
+            row = {'id': p.id, 'cycle': p.cycle.key, 'start_bp': p.start_bp}
+            if p.parent is not None:
+                row['parent'] = p.parent
+            placements.append(row)
+        return {'name': self.name, 'period_bp': self.period_bp, 'placements': placements}
+
+    @classmethod
+    def from_dict(cls, data: dict, catalogue: Optional[Catalogue] = None) -> 'Supercycle':
+        """
+        Rebuild a supercycle from to_dict(). Also accepts hand-written entries:
+          placements without 'id'      ->  added with add() (their injections are placed automatically)
+          'fill': ['PSB.ISOLDE', ...]  ->  fill() applied at the end, in order
+        """
+        known = {'name', 'period_bp', 'placements', 'fill'}
+        unknown = set(data) - known
+        if unknown:
+            raise ValueError(f"supercycle {data.get('name')!r}: unknown field(s) {sorted(unknown)}")
+        sc = cls(data['name'], data['period_bp'], catalogue)
+        rows = data.get('placements') or []
+
+        # exact placements (with id): restored as they are
+        exact = [row for row in rows if 'id' in row]
+        for row in exact:
+            sc.placements[row['id']] = Placement(id=row['id'], cycle=sc.catalogue.cycle(row['cycle']),
+                                                 start_bp=sc.wrap(row['start_bp']), parent=row.get('parent'))
+        missing_parents = {p.parent for p in sc.placements.values()} - set(sc.placements) - {None}
+        if missing_parents:
+            raise ValueError(f'supercycle {sc.name!r}: parent id(s) {sorted(missing_parents)} not found')
+        sc._check_no_overlap()
+        sc._next_id = max(sc.placements, default=0) + 1
+
+        # hand-written placements (no id): placed with their injections
+        for row in rows:
+            if 'id' not in row:
+                machine, cycle_id = row['cycle'].split('.', 1)
+                sc.add(machine, cycle_id, row.get('start_bp'))
+        for key in data.get('fill') or []:
+            machine, cycle_id = key.split('.', 1)
+            sc.fill(machine, cycle_id)
+        return sc
+
     # ------------------------------------------------------------------ views
     def placements_on(self, machine: str) -> list:
         """Placements of one machine, ordered by start BP."""
@@ -280,7 +548,8 @@ class Supercycle:
                 'flux_p_per_s': flux,
                 'current_uA': flux * ELEMENTARY_CHARGE * 1e6,
             })
-        return pd.DataFrame(table)
+        return pd.DataFrame(table, columns=['facility', 'machine', 'cycles_per_supercycle',
+                                            'protons_per_supercycle', 'flux_p_per_s', 'current_uA'])
 
     def to_dataframe(self) -> pd.DataFrame:
         """All placements as a table (one row per cycle played)."""

@@ -252,6 +252,31 @@ class Catalogue:
         new.cycles[cycle.key] = new_cycle
         return new
 
+    def beam_changes(self, base: Optional['Catalogue'] = None) -> dict:
+        """
+        Beams changed with with_beam() relative to ``base`` (default: the catalogue of the files),
+        as {cycle key: {'intensity': ..., 'transmission': ...}} with only the changed fields.
+        with_beams(beam_changes()) applied to ``base`` gives this catalogue back.
+        """
+        base = base if base is not None else load_catalogue(self.directory)
+        changes = {}
+        for key, cycle in self.cycles.items():
+            original = base.cycles.get(key)
+            if original is None or cycle.beam == original.beam or cycle.beam is None:
+                continue
+            changed = {field: getattr(cycle.beam, field) for field in ['intensity', 'transmission']
+                       if getattr(cycle.beam, field) != getattr(original.beam, field)}
+            if changed:
+                changes[key] = changed
+        return changes
+
+    def with_beams(self, changes: dict) -> 'Catalogue':
+        """Several with_beam() at once: changes = {cycle key: {'intensity': ..., 'transmission': ...}}."""
+        catalogue = self
+        for key, fields in (changes or {}).items():
+            catalogue = catalogue.with_beam(key, **fields)
+        return catalogue
+
     def to_dataframe(self) -> pd.DataFrame:
         """Overview table of all cycle types."""
         rows = []

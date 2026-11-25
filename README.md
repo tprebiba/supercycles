@@ -26,14 +26,20 @@ one Qt binding (PyQt5, PyQt6 or PySide6): `pip install PyQt6`, or install the pa
 supercycles/
     catalogue.py               Catalogue, CycleType, Beam, Injection, Facility, Machine
     supercycle.py              Supercycle, Placement, Issue, PlacementError
-    schedule.py                Schedule: time sharing of a run, cycles / protons / currents over the run
+    schedule.py                Schedule: time sharing of a run, cycles / protons / currents over the run;
+                               editing, YAML files (save / load), compare_schedules
     plotting.py                plot_supercycle, plot_magnet_current
-    gui.py                     scenario viewer (Qt)
+    gui/                       scenario viewer and editor (Qt):
+        main_window.py             window, open scenarios and file menu, views (view mode)
+        editing.py                 edit-mode operations (EditingMixin of the main window)
+        edit_widgets.py            cycle palette, drag-and-drop grid canvas, new-supercycle dialog
+        compare_window.py          comparison of two scenarios
+        common.py                  constants, table helpers, OpenScenario (scenario + undo history)
     data/catalogue/*.yaml      machines & limits, facilities, cycle types of PSB / PS / SPS
     data/profiles/*.csv        SPS magnet current profiles
 scenarios/                     one module per scenario of the reference spreadsheet (see below)
 examples/                      01_catalogue, 02_build_supercycle, 03_checks_and_deliverables,
-                               04_plotting, 05_scenarios
+                               04_plotting, 05_scenarios, 06_edit_save_compare
 ```
 
 ### Catalogue
@@ -81,6 +87,19 @@ sc.validate()                   # [] if everything is fine
 sc.facility_table()             # cycles, protons, flux and current per facility
 ```
 
+Editing an existing supercycle. The period changes where needed, every cycle keeps its injections at
+the same offsets (also those wrapped around the end), and each method either succeeds completely
+or raises `PlacementError` and changes nothing:
+
+```python
+sc.append('SPS', 'AWAKE')        # after the last SPS cycle: in the free BPs there, else lengthening
+sc.insert('SPS', 'AWAKE', 10)    # at BP 10, lengthening the supercycle; later cycles move later
+sc.conflicts('SPS', 'AWAKE', 10) # top-level cycles in the way of a placement (with its injections)
+sc.replace('PS', 'TOF', 2)       # remove what is in the way, then place
+sc.insert_bps(13, 2)             # 2 empty BPs before BP 13;  sc.remove_bps(13, 2) undoes it
+sc.to_dict()                     # plain description; Supercycle.from_dict() rebuilds it exactly
+```
+
 
 ## Scenarios
 
@@ -110,7 +129,7 @@ cycle without its PSB injection, a PSB injection used by no PS cycle, a supercyc
 not a whole number of BPs) are commented in the scenario files.
 
 
-## Schedule and scenario viewer
+## Schedule, scenario files and comparison
 
 `Schedule` shares a run between the supercycles of a scenario, as the spreadsheet does: each
 supercycle is played  run length x share / length  times. It gives the availability of each
@@ -132,15 +151,54 @@ schedule.facility_table()          # cycles, protons, average flux and current p
 schedule.per_supercycle_table()    # cycles of each facility per supercycle
 ```
 
-The scenario viewer (`supercycles/gui.py`) only displays: all numbers come from `Supercycle` and
-`Schedule`. It shows the run settings and the availability of each machine, the list of
-supercycles (click one to plot it with the SPS magnet current, its `validate()` result and what it
-delivers), the facility numbers per supercycle and over the run, and the time sharing.
+A `Schedule` holds everything that defines a scenario, so it is also what is edited, saved and
+compared. The share of the run of each supercycle is an input: lengthening a supercycle keeps its
+hours and lowers the number of times it is played.
+
+```python
+variant = schedule.copy('run3 + AWAKE')
+variant.supercycles['Physics'].append('SPS', 'AWAKE')
+variant.new_supercycle('AWAKE only', period_bp=24, share=2)    # also add_supercycle, remove_supercycle,
+variant.rescale_shares(keep=('Downtime',))                      # rename_supercycle, set_share, ...
+variant.save('run3_awake.yaml')                                 # Schedule.load('run3_awake.yaml')
+compare_schedules(schedule, variant)['facilities']              # A, B, change, change % per facility
+```
+
+A scenario file is YAML with the run settings, the time shares, the beams changed with
+`with_beam()` (`catalogue_changes`), and every placement of every supercycle on one line
+(`{id: 2, cycle: PS.MTE, start_bp: 36, parent: 1}`). The files can also be written by hand:
+placements without `id` are added with `add()` (their injections follow), and
+`fill: [PSB.ISOLDE]` fills the free BPs at the end.
+
+
+## Scenario viewer and editor
+
+The GUI (`supercycles/gui/`) displays and forwards edits; all numbers and all changes go through
+`Supercycle` and `Schedule`.
 
 ```
 python -m supercycles.gui                   # from the repository root
-python -m supercycles.gui run4_ship_ft9p6   # open a given scenario
+python -m supercycles.gui run4_ship_ft9p6   # open a given scenario of the package
+python -m supercycles.gui my_scenario.yaml  # open a scenario file
 ```
+
+- **View mode** (default): the run settings and the availability of each machine, the list of
+  supercycles (click one to plot it with the SPS magnet current, its `validate()` result and what
+  it delivers), the facility numbers per supercycle and over the run, and the time sharing.
+- **Edit mode** (Ctrl+E):
+  - supercycles table: double-click a name or a share to change it; add (empty, or a copy of any
+    supercycle of any open scenario), duplicate, remove, reorder, in/out of the averages,
+    rescale the shares to 100 %; the run length becomes editable;
+  - supercycle plot: drag a cycle from the palette onto the grid (if something is in the way you
+    can replace it, or insert the cycle and lengthen the supercycle), double-click a palette entry to
+    append it at the end, right-click the grid to insert / remove cycles and BPs, fill the free
+    BPs, or clear a machine; set the period directly;
+  - undo / redo (Ctrl+Z / Ctrl+Shift+Z), and a pop-up when an edit breaks a limit (length, power).
+- **File**: new scenario (from scratch), open / save / save as (YAML), duplicate, revert. The
+  modules of `scenarios/` are never modified: an edited one is marked `*` and saved with *Save as*.
+- **Tools > Compare scenarios** (Ctrl+K): any two open scenarios (and the saved version of an
+  edited one) side by side: facilities (with a chart of the relative changes), supercycles,
+  cycles and run.
 
 It needs one Qt binding: `pip install PyQt6` (PyQt5 and PySide6 work too).
 
