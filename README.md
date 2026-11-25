@@ -207,8 +207,8 @@ It needs one Qt binding: `pip install PyQt6` (PyQt5 and PySide6 work too).
 
 ## Relevant presentations and notes
 
-- **SPS Operation and Future Proton Sharing Scenarios for the ECN3 facility**
-  [CERN-PBC-NOTE 2023001](https://cds.cern.ch/record/2848908/files/CERN-PBC-Notes-2023-001.pdf)
+- **Studies on the Future Beam Sharing Across the CERN Injector Complex**
+  [CERN EDMS 3288709 (ACC-OP-EN-0001)](https://edms.cern.ch/document/3288709/1.0) (2025)
 
-- **Proton sharing in the injector complex post LS3**, Chamonix Workshop 2025
-  [Online access (restricted)](https://indi.to/RT4HJ)
+- **SPS Operation and Future Proton Sharing Scenarios for the ECN3 facility**
+  [CERN-PBC-NOTE 2023001](https://cds.cern.ch/record/2848908/files/CERN-PBC-Notes-2023-001.pdf) (2023)
